@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Circle, Layer, Stage, Line } from "react-konva";
 import Konva from "konva";
 
@@ -16,20 +16,20 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const stageRef = useRef<Konva.Stage>(null);
 
-  const calculateHandlePosition = (angleDegrees: number) => {
+  const calculateHandlePosition = useCallback((angleDegrees: number) => {
     // Convert degrees to radians, adjusting so 0 degrees is 'up'
     const angleRadians = ((angleDegrees - 90) * Math.PI) / 180;
     return {
       x: center.x + trackRadius * Math.cos(angleRadians),
       y: center.y + trackRadius * Math.sin(angleRadians),
     };
-  };
+  }, [center.x, center.y, trackRadius]);
 
   const [handlePosition, setHandlePosition] = useState(calculateHandlePosition(value));
 
   useEffect(() => {
     setHandlePosition(calculateHandlePosition(value));
-  }, [value]);
+  }, [value, calculateHandlePosition]);
 
   const updateRotationFromPointer = () => {
     const stage = stageRef.current;
@@ -42,7 +42,7 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
     const dy = pointerPosition.y - center.y;
 
     // Calculate angle in radians, atan2 gives angle relative to positive x-axis
-    let angleRadians = Math.atan2(dy, dx);
+    const angleRadians = Math.atan2(dy, dx);
 
     // Convert radians to degrees (0-360), adjusting so 0 degrees is 'up'
     let angleDegrees = (angleRadians * 180) / Math.PI + 90;
@@ -72,8 +72,7 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
   };
 
   return (
-    <div className="p-4 bg-gray-700/50 rounded-lg mt-4 flex flex-col items-center">
-      <h3 className="text-lg font-semibold mb-2 text-yellow-300">Rotation</h3>
+    <div className="p-2 bg-gray-700/50 rounded-lg flex flex-col items-center">
       <Stage
         width={containerSize}
         height={containerSize}
@@ -123,7 +122,6 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
           />
         </Layer>
       </Stage>
-      <p className="text-center mt-2">{value}°</p>
     </div>
   );
 };

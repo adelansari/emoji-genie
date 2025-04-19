@@ -80,7 +80,7 @@ const SizeControlSimple = ({
     const resetButtonClass = `${baseButtonClass} bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300 hover:text-white`;
 
     return (
-        <div className="p-4 bg-gray-700/50 rounded-lg mt-4 flex flex-col items-center gap-4">
+        <div className="p-4 py-13 bg-gray-700/50 rounded-lg flex flex-col items-center gap-6">
             <div className="w-full flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-yellow-300">Size</h3>
                 <div className="flex items-center gap-1">
@@ -92,7 +92,7 @@ const SizeControlSimple = ({
                     </button>
                 </div>
             </div>
-            <div className="w-full flex flex-col gap-3">
+            <div className="w-full flex flex-col gap-5">
                 {/* X Slider */}
                 <div className="flex items-center gap-3">
                     <label htmlFor="sizeXSliderSimple" className="font-medium text-sm w-4 text-gray-300">X:</label>
