@@ -7,6 +7,7 @@ function App() {
     x: 300,
     y: 300,
   });
+  const [rotation, setRotation] = useState(0);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-800">
@@ -17,9 +18,11 @@ function App() {
         <CustomizationMenu
           setPosition={setPosition}
           position={position}
+          setRotation={setRotation}
+          rotation={rotation}
         />
         <div className="flex-shrink-0">
-          <EmojiCanvas position={position} />
+          <EmojiCanvas position={position} rotation={rotation} />
         </div>
       </div>
     </div>
