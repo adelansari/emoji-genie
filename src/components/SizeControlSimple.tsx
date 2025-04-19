@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock, RotateCcw } from 'lucide-react';
 
 type SizeControlSimpleProps = {
     sizeX: number;
@@ -70,16 +70,27 @@ const SizeControlSimple = ({
         }
     };
 
+    const handleReset = () => {
+        onChange({ x: 100, y: 100 });
+    };
+
     const sliderClass = "w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50";
-    const buttonClass = `p-1.5 rounded transition-colors duration-150 ease-in-out border ${isLocked ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300 hover:text-white'}`;
+    const baseButtonClass = "p-1.5 rounded transition-colors duration-150 ease-in-out border";
+    const lockButtonClass = `${baseButtonClass} ${isLocked ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300 hover:text-white'}`;
+    const resetButtonClass = `${baseButtonClass} bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300 hover:text-white`;
 
     return (
         <div className="p-4 bg-gray-700/50 rounded-lg mt-4 flex flex-col items-center gap-4">
             <div className="w-full flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-yellow-300">Size</h3>
-                <button onClick={toggleLock} className={buttonClass} title={isLocked ? "Unlock Aspect Ratio" : "Lock Aspect Ratio"}>
-                    {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
-                </button>
+                <div className="flex items-center gap-1">
+                    <button onClick={toggleLock} className={lockButtonClass} title={isLocked ? "Unlock Aspect Ratio" : "Lock Aspect Ratio"}>
+                        {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                    </button>
+                    <button onClick={handleReset} className={resetButtonClass} title="Reset Size to 100%">
+                        <RotateCcw size={16} />
+                    </button>
+                </div>
             </div>
             <div className="w-full flex flex-col gap-3">
                 {/* X Slider */}
