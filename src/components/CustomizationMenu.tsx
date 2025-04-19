@@ -1,9 +1,9 @@
 import { useState } from "react";
 import JoystickController from "./JoystickController";
 import ModelGallery from "./ModelGallery";
-import SizeSlider from "./SizeSlider"; // Import SizeSlider
-import RotationSlider from "./RotationSlider"; // Import RotationSlider
-import ColorPicker from "./ColorPicker"; // Import ColorPicker
+import SizeSlider from "./SizeSlider";
+import RotationJoystick from "./RotationJoystick";
+import ColorPicker from "./ColorPicker";
 
 type CustomizationMenuProps = {
   setPosition: (position: { x: number; y: number }) => void;
@@ -11,6 +11,8 @@ type CustomizationMenuProps = {
     x: number;
     y: number;
   };
+  setRotation: (rotation: number) => void;
+  rotation: number;
 };
 
 type EmojiPart = "Head" | "Hat" | "Eyes" | "Mouth";
@@ -24,7 +26,6 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
   const [mode, setMode] = useState<EditMode>("none");
 
   const [size, setSize] = useState(100);
-  const [rotation, setRotation] = useState(0);
   const [color, setColor] = useState("#FFA500");
 
   const renderEditControl = () => {
@@ -32,11 +33,9 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
       case "position":
         return <JoystickController setPosition={props.setPosition} position={props.position} />;
       case "size":
-        // Use SizeSlider component
         return <SizeSlider value={size} onChange={setSize} />;
       case "rotation":
-        // Use RotationSlider component
-        return <RotationSlider value={rotation} onChange={setRotation} />;
+        return <RotationJoystick value={props.rotation} onChange={props.setRotation} />;
       case "color":
         // Use ColorPicker component
         return <ColorPicker value={color} onChange={setColor} />;
