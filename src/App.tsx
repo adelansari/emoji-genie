@@ -8,6 +8,10 @@ function App() {
     y: 300,
   });
   const [rotation, setRotation] = useState(0);
+  const [size, setSize] = useState({
+    x: 100,
+    y: 100,
+  });
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-800">
@@ -16,13 +20,15 @@ function App() {
       </h1>
       <div className="w-full max-w-6xl flex flex-col md:flex-row justify-center items-start gap-8">
         <CustomizationMenu
-          setPosition={setPosition}
           position={position}
-          setRotation={setRotation}
+          setPosition={setPosition}
           rotation={rotation}
+          setRotation={setRotation}
+          size={size}
+          setSize={setSize}
         />
         <div className="flex-shrink-0">
-          <EmojiCanvas position={position} rotation={rotation} />
+          <EmojiCanvas position={position} rotation={rotation} size={size} />
         </div>
       </div>
     </div>
