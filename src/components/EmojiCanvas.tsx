@@ -12,13 +12,13 @@ type EmojiCanvasProps = {
     y: number;
   };
   headShape: HeadShapeType;
+  color: string;
 };
 
 export default function EmojiCanvas(props: EmojiCanvasProps) {
   const canvasSize = 600;
   const scaleX = props.size.x / 100;
   const scaleY = props.size.y / 100;
-  const elementColor = "orange";
 
   const renderHeadShape = () => {
     const modelData = headModels.find(m => m.id === props.headShape);
@@ -26,7 +26,7 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
     const commonProps = {
       x: props.position.x,
       y: props.position.y,
-      fill: elementColor,
+      fill: props.color,
       rotation: props.rotation,
       shadowBlur: 10,
       shadowColor: "black",

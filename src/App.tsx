@@ -14,6 +14,7 @@ function App() {
     y: 100,
   });
   const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("square");
+  const [color, setColor] = useState("#FFFFFF");
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-800">
@@ -27,6 +28,7 @@ function App() {
             rotation={rotation}
             size={size}
             headShape={selectedHeadModel}
+            color={color}
           />
         </div>
         <div className="flex-shrink-0">
@@ -39,6 +41,8 @@ function App() {
             setSize={setSize}
             selectedHeadModel={selectedHeadModel}
             onSelectHeadModel={setSelectedHeadModel}
+            color={color}
+            setColor={setColor}
           />
         </div>
       </div>

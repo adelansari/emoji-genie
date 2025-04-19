@@ -15,6 +15,8 @@ type CustomizationMenuProps = {
   size: { x: number; y: number };
   selectedHeadModel: HeadShapeType;
   onSelectHeadModel: (modelId: HeadShapeType) => void;
+  color: string;
+  setColor: (color: string) => void;
 };
 
 
@@ -27,8 +29,6 @@ const editModes: EditMode[] = ["position", "size", "rotation", "color"];
 export default function CustomizationMenu(props: CustomizationMenuProps) {
   const [selectedPart, setSelectedPart] = useState<EmojiPart>("Head");
   const [mode, setMode] = useState<EditMode>("none");
-
-  const [color, setColor] = useState("#FFA500");
 
   const handleSelectModel = (part: EmojiPart, modelId: HeadShapeType) => {
     if (part === "Head") {
@@ -45,7 +45,7 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
       case "rotation":
         return <RotationJoystick value={props.rotation} onChange={props.setRotation} />;
       case "color":
-        return <ColorPicker value={color} onChange={setColor} />;
+        return <ColorPicker value={props.color} onChange={props.setColor} />;
       case "none":
       default:
         return null;
