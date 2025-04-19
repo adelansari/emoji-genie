@@ -1,12 +1,14 @@
 import { useState } from "react";
-import EmojiCanvas from "./components/EmojiCanvas"
+import EmojiCanvas from "./components/EmojiCanvas";
 import CustomizationMenu from "./components/CustomizationMenu";
+import { HeadShapeType } from "./data/headModels"; // Updated import path
 
 function App() {
   const [position, setPosition] = useState({
     x: 300,
     y: 300,
   });
+  const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("square");
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-800">
@@ -14,16 +16,23 @@ function App() {
         Emoji Genie
       </h1>
       <div className="w-full max-w-6xl flex flex-col md:flex-row justify-center items-start gap-8">
-        <CustomizationMenu
-          setPosition={setPosition}
-          position={position}
-        />
         <div className="flex-shrink-0">
-          <EmojiCanvas position={position} />
+          <EmojiCanvas
+            position={position}
+            headShape={selectedHeadModel}
+          />
+        </div>
+        <div className="flex-shrink-0">
+          <CustomizationMenu
+            setPosition={setPosition}
+            position={position}
+            selectedHeadModel={selectedHeadModel}
+            onSelectHeadModel={setSelectedHeadModel}
+          />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,14 +1,47 @@
-import { Layer, Rect, Stage } from "react-konva";
+import { Layer, Rect, Stage, Path } from "react-konva";
+import { HeadShapeType, headModels } from "../data/headModels";
 
 type EmojiCanvasProps = {
   position: {
     x: number;
     y: number;
   };
+  headShape: HeadShapeType;
 };
 
 export default function EmojiCanvas(props: EmojiCanvasProps) {
   const canvasSize = 600;
+  const elementBaseSize = 100;
+  const elementColor = "orange";
+  const elementRotation = 0;
+
+  const renderHeadShape = () => {
+    const commonProps = {
+      x: props.position.x,
+      y: props.position.y,
+      fill: elementColor,
+      rotation: elementRotation,
+      shadowBlur: 10,
+      shadowColor: "black",
+      scaleX: elementBaseSize / 100,
+      scaleY: elementBaseSize / 100,
+      offsetX: 0,
+      offsetY: 0,
+    };
+    const modelData = headModels.find(m => m.id === props.headShape);
+
+    if (modelData?.konvaData) {
+      return <Path {...commonProps} data={modelData.konvaData} />;
+    } else {
+      console.warn(`Konva data not found for head shape: ${props.headShape}. Rendering default circle.`);
+      const defaultModel = headModels.find(m => m.id === 'circle');
+      if (defaultModel?.konvaData) {
+        return <Path {...commonProps} data={defaultModel.konvaData} />;
+      }
+      return null;
+    }
+  };
+
   return (
     <div className="bg-gray-700 rounded-lg shadow-xl overflow-hidden">
       <Stage width={canvasSize} height={canvasSize}>
@@ -20,18 +53,9 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
             height={canvasSize}
             fill="#555"
           />
-          <Rect
-            x={props.position.x - 50}
-            y={props.position.y - 50}
-            width={100}
-            height={100}
-            fill="orange"
-            cornerRadius={10}
-            shadowBlur={10}
-            shadowColor="black"
-          />
+          {renderHeadShape()}
         </Layer>
       </Stage>
     </div>
-  )
+  );
 }
