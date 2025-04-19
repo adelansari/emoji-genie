@@ -5,10 +5,13 @@ type EmojiCanvasProps = {
     x: number;
     y: number;
   };
+  rotation: number;
 };
 
 export default function EmojiCanvas(props: EmojiCanvasProps) {
   const canvasSize = 600;
+  const rectSize = 100;
+
   return (
     <div className="bg-gray-700 rounded-lg shadow-xl overflow-hidden">
       <Stage width={canvasSize} height={canvasSize}>
@@ -21,14 +24,17 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
             fill="#555"
           />
           <Rect
-            x={props.position.x - 50}
-            y={props.position.y - 50}
-            width={100}
-            height={100}
+            x={props.position.x}
+            y={props.position.y}
+            width={rectSize}
+            height={rectSize}
             fill="orange"
             cornerRadius={10}
             shadowBlur={10}
             shadowColor="black"
+            rotation={props.rotation}
+            offsetX={rectSize / 2}
+            offsetY={rectSize / 2}
           />
         </Layer>
       </Stage>
