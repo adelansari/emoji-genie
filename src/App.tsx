@@ -1,6 +1,6 @@
 import { useState } from "react";
 import EmojiCanvas from "./components/EmojiCanvas"
-import JoystickController from "./components/JoystickController"
+import CustomizationMenu from "./components/CustomizationMenu";
 
 function App() {
   const [position, setPosition] = useState({
@@ -14,11 +14,12 @@ function App() {
         Emoji Genie
       </h1>
       <div className="w-full max-w-6xl flex flex-col md:flex-row justify-center items-start gap-8">
+        <CustomizationMenu
+          setPosition={setPosition}
+          position={position}
+        />
         <div className="flex-shrink-0">
           <EmojiCanvas position={position} />
-        </div>
-        <div className="flex-shrink-0">
-          <JoystickController setPosition={setPosition} position={position} />
         </div>
       </div>
     </div>
