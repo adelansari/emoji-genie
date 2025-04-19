@@ -1,16 +1,16 @@
 import { useState } from "react";
 import JoystickController from "./JoystickController";
 import ModelGallery from "./ModelGallery";
-import SizeSlider from "./SizeSlider"; // Import SizeSlider
-import RotationSlider from "./RotationSlider"; // Import RotationSlider
-import ColorPicker from "./ColorPicker"; // Import ColorPicker
+import SizeSlider from "./SizeSlider";
+import RotationSlider from "./RotationSlider";
+import ColorPicker from "./ColorPicker";
+import { HeadShapeType } from "../data/headModels"; // Updated import path
 
 type CustomizationMenuProps = {
   setPosition: (position: { x: number; y: number }) => void;
-  position: {
-    x: number;
-    y: number;
-  };
+  position: { x: number; y: number };
+  selectedHeadModel: HeadShapeType;
+  onSelectHeadModel: (modelId: HeadShapeType) => void;
 };
 
 type EmojiPart = "Head" | "Hat" | "Eyes" | "Mouth";
@@ -27,18 +27,21 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
   const [rotation, setRotation] = useState(0);
   const [color, setColor] = useState("#FFA500");
 
+  const handleSelectModel = (part: EmojiPart, modelId: HeadShapeType) => {
+    if (part === "Head") {
+      props.onSelectHeadModel(modelId);
+    }
+  };
+
   const renderEditControl = () => {
     switch (mode) {
       case "position":
         return <JoystickController setPosition={props.setPosition} position={props.position} />;
       case "size":
-        // Use SizeSlider component
         return <SizeSlider value={size} onChange={setSize} />;
       case "rotation":
-        // Use RotationSlider component
         return <RotationSlider value={rotation} onChange={setRotation} />;
       case "color":
-        // Use ColorPicker component
         return <ColorPicker value={color} onChange={setColor} />;
       case "none":
       default:
@@ -67,7 +70,11 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
       </nav>
 
       <div className="bg-gray-900/50 rounded-md p-2 min-h-[100px]">
-        <ModelGallery />
+        <ModelGallery
+          selectedPart={selectedPart}
+          onSelectModel={handleSelectModel}
+          currentHeadModel={props.selectedHeadModel}
+        />
       </div>
       <div className="grid grid-cols-4 gap-2">
         {editModes.map((editMode) => (
