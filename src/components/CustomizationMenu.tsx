@@ -4,21 +4,19 @@ import ModelGallery from "./ModelGallery";
 import SizeControlSimple from "./SizeControlSimple";
 import RotationJoystick from "./RotationJoystick";
 import ColorPicker from "./ColorPicker";
+import { HeadShapeType } from "../data/headModels";
 
 type CustomizationMenuProps = {
   setPosition: (position: { x: number; y: number }) => void;
-  position: {
-    x: number;
-    y: number;
-  };
+  position: { x: number; y: number };
   setRotation: (rotation: number) => void;
   rotation: number;
   setSize: (size: { x: number; y: number }) => void;
-  size: {
-    x: number;
-    y: number;
-  };
+  size: { x: number; y: number };
+  selectedHeadModel: HeadShapeType;
+  onSelectHeadModel: (modelId: HeadShapeType) => void;
 };
+
 
 type EmojiPart = "Head" | "Hat" | "Eyes" | "Mouth";
 const emojiParts: EmojiPart[] = ["Head", "Hat", "Eyes", "Mouth"];
@@ -31,6 +29,12 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
   const [mode, setMode] = useState<EditMode>("none");
 
   const [color, setColor] = useState("#FFA500");
+
+  const handleSelectModel = (part: EmojiPart, modelId: HeadShapeType) => {
+    if (part === "Head") {
+      props.onSelectHeadModel(modelId);
+    }
+  };
 
   const renderEditControl = () => {
     switch (mode) {
@@ -69,7 +73,11 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
       </nav>
 
       <div className="bg-gray-900/50 rounded-md p-2 min-h-[100px]">
-        <ModelGallery />
+        <ModelGallery
+          selectedPart={selectedPart}
+          onSelectModel={handleSelectModel}
+          currentHeadModel={props.selectedHeadModel}
+        />
       </div>
       <div className="grid grid-cols-4 gap-2">
         {editModes.map((editMode) => (

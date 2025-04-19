@@ -1,4 +1,5 @@
-import { Layer, Rect, Stage } from "react-konva";
+import { Layer, Rect, Stage, Path } from "react-konva";
+import { HeadShapeType, headModels } from "../data/headModels";
 
 type EmojiCanvasProps = {
   position: {
@@ -10,14 +11,42 @@ type EmojiCanvasProps = {
     x: number;
     y: number;
   };
+  headShape: HeadShapeType;
 };
 
 export default function EmojiCanvas(props: EmojiCanvasProps) {
   const canvasSize = 600;
-  const baseRectSize = 100;
-
   const scaleX = props.size.x / 100;
   const scaleY = props.size.y / 100;
+  const elementColor = "orange";
+
+  const renderHeadShape = () => {
+    const modelData = headModels.find(m => m.id === props.headShape);
+
+    const commonProps = {
+      x: props.position.x,
+      y: props.position.y,
+      fill: elementColor,
+      rotation: props.rotation,
+      shadowBlur: 10,
+      shadowColor: "black",
+      scaleX: scaleX,
+      scaleY: scaleY,
+      offsetX: 0,
+      offsetY: 0,
+    };
+
+    if (modelData?.konvaData) {
+      return <Path {...commonProps} data={modelData.konvaData} />;
+    } else {
+      console.warn(`Konva data not found for head shape: ${props.headShape}. Rendering default circle.`);
+      const defaultModel = headModels.find(m => m.id === 'circle');
+      if (defaultModel?.konvaData) {
+        return <Path {...commonProps} data={defaultModel.konvaData} />;
+      }
+      return null;
+    }
+  };
 
   return (
     <div className="bg-gray-700 rounded-lg shadow-xl overflow-hidden">
@@ -30,23 +59,9 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
             height={canvasSize}
             fill="#555"
           />
-          <Rect
-            x={props.position.x}
-            y={props.position.y}
-            width={baseRectSize}
-            height={baseRectSize}
-            fill="orange"
-            cornerRadius={10}
-            shadowBlur={10}
-            shadowColor="black"
-            rotation={props.rotation}
-            scaleX={scaleX}
-            scaleY={scaleY}
-            offsetX={baseRectSize / 2}
-            offsetY={baseRectSize / 2}
-          />
-        </Layer>
-      </Stage>
-    </div>
-  )
+          {renderHeadShape()}
+        </Layer >
+      </Stage >
+    </div >
+  );
 }
