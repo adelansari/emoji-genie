@@ -81,8 +81,7 @@ export default function JoystickController(props: JoystickControllerProps) {
   };
 
   return (
-    <div className="bg-gray-700 rounded-lg shadow-xl p-4 flex flex-col items-center">
-      <h3 className="text-lg font-semibold mb-2 text-yellow-300">Position Control</h3>
+    <div className="bg-gray-700/50 rounded-lg shadow-xl p-2 flex flex-col items-center">
       <Stage
         width={containerSize}
         height={containerSize}

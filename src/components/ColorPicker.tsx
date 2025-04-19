@@ -15,7 +15,7 @@ export default function ColorPicker({ value, onChange }: ColorPickerProps) {
   };
 
   return (
-    <div className="bg-gray-700/50 rounded-lg mt-4 flex flex-col items-center">
+    <div className="bg-gray-700/50 rounded-lg flex flex-col items-center">
       <div className="chrome-picker-wrapper w-full">
         <ChromePicker
           color={value}
@@ -32,7 +32,7 @@ export default function ColorPicker({ value, onChange }: ColorPickerProps) {
               },
               saturation: {
                 width: '100%',
-                paddingBottom: '40%',
+                paddingBottom: '30%',
                 position: 'relative',
                 overflow: 'hidden',
               },

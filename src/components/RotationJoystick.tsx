@@ -72,8 +72,7 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
   };
 
   return (
-    <div className="p-4 bg-gray-700/50 rounded-lg mt-4 flex flex-col items-center">
-      <h3 className="text-lg font-semibold mb-2 text-yellow-300">Rotation</h3>
+    <div className="p-2 bg-gray-700/50 rounded-lg flex flex-col items-center">
       <Stage
         width={containerSize}
         height={containerSize}
@@ -123,7 +122,6 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
           />
         </Layer>
       </Stage>
-      <p className="text-center mt-2">{value}°</p>
     </div>
   );
 };
