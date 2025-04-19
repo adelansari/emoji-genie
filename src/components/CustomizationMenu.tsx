@@ -4,22 +4,13 @@ import ModelGallery from "./ModelGallery";
 import SizeSlider from "./SizeSlider";
 import RotationSlider from "./RotationSlider";
 import ColorPicker from "./ColorPicker";
-import { HeadShapeType } from "./headModels"; // Import HeadShapeType
+import { HeadShapeType } from "../data/headModels"; // Updated import path
 
 type CustomizationMenuProps = {
-  // Position props
   setPosition: (position: { x: number; y: number }) => void;
   position: { x: number; y: number };
-  // Head Model props
   selectedHeadModel: HeadShapeType;
   onSelectHeadModel: (modelId: HeadShapeType) => void;
-  // Add other props (size, rotation, color) as needed
-  // size: number;
-  // setSize: (size: number) => void;
-  // rotation: number;
-  // setRotation: (rotation: number) => void;
-  // color: string;
-  // setColor: (color: string) => void;
 };
 
 type EmojiPart = "Head" | "Hat" | "Eyes" | "Mouth";
@@ -32,7 +23,6 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
   const [selectedPart, setSelectedPart] = useState<EmojiPart>("Head");
   const [mode, setMode] = useState<EditMode>("none");
 
-  // These states might need to be lifted to App.tsx eventually
   const [size, setSize] = useState(100);
   const [rotation, setRotation] = useState(0);
   const [color, setColor] = useState("#FFA500");
@@ -41,7 +31,6 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
     if (part === "Head") {
       props.onSelectHeadModel(modelId);
     }
-    // Add logic for other parts later
   };
 
   const renderEditControl = () => {
@@ -84,7 +73,7 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
         <ModelGallery
           selectedPart={selectedPart}
           onSelectModel={handleSelectModel}
-          currentHeadModel={props.selectedHeadModel} // Pass current selection for highlighting
+          currentHeadModel={props.selectedHeadModel}
         />
       </div>
       <div className="grid grid-cols-4 gap-2">

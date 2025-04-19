@@ -1,14 +1,14 @@
 import { useState } from "react";
 import EmojiCanvas from "./components/EmojiCanvas";
 import CustomizationMenu from "./components/CustomizationMenu";
-import { HeadShapeType } from "./components/headModels"; // Import HeadShapeType
+import { HeadShapeType } from "./data/headModels"; // Updated import path
 
 function App() {
   const [position, setPosition] = useState({
     x: 300,
     y: 300,
   });
-  const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("square"); // Default to square
+  const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("square");
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-800">
@@ -19,7 +19,7 @@ function App() {
         <div className="flex-shrink-0">
           <EmojiCanvas
             position={position}
-            headShape={selectedHeadModel} // Pass selected head shape
+            headShape={selectedHeadModel}
           />
         </div>
         <div className="flex-shrink-0">
