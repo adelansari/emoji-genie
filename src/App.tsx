@@ -1,12 +1,17 @@
 import { useState } from "react";
 import EmojiCanvas from "./components/EmojiCanvas";
 import CustomizationMenu from "./components/CustomizationMenu";
-import { HeadShapeType } from "./data/headModels"; // Updated import path
+import { HeadShapeType } from "./data/headModels";
 
 function App() {
   const [position, setPosition] = useState({
     x: 300,
     y: 300,
+  });
+  const [rotation, setRotation] = useState(0);
+  const [size, setSize] = useState({
+    x: 100,
+    y: 100,
   });
   const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("square");
 
@@ -19,13 +24,19 @@ function App() {
         <div className="flex-shrink-0">
           <EmojiCanvas
             position={position}
+            rotation={rotation}
+            size={size}
             headShape={selectedHeadModel}
           />
         </div>
         <div className="flex-shrink-0">
           <CustomizationMenu
-            setPosition={setPosition}
             position={position}
+            setPosition={setPosition}
+            rotation={rotation}
+            setRotation={setRotation}
+            size={size}
+            setSize={setSize}
             selectedHeadModel={selectedHeadModel}
             onSelectHeadModel={setSelectedHeadModel}
           />

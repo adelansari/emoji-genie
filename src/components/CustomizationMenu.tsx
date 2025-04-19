@@ -1,17 +1,22 @@
 import { useState } from "react";
 import JoystickController from "./JoystickController";
 import ModelGallery from "./ModelGallery";
-import SizeSlider from "./SizeSlider";
-import RotationSlider from "./RotationSlider";
+import SizeControlSimple from "./SizeControlSimple";
+import RotationJoystick from "./RotationJoystick";
 import ColorPicker from "./ColorPicker";
-import { HeadShapeType } from "../data/headModels"; // Updated import path
+import { HeadShapeType } from "../data/headModels";
 
 type CustomizationMenuProps = {
   setPosition: (position: { x: number; y: number }) => void;
   position: { x: number; y: number };
+  setRotation: (rotation: number) => void;
+  rotation: number;
+  setSize: (size: { x: number; y: number }) => void;
+  size: { x: number; y: number };
   selectedHeadModel: HeadShapeType;
   onSelectHeadModel: (modelId: HeadShapeType) => void;
 };
+
 
 type EmojiPart = "Head" | "Hat" | "Eyes" | "Mouth";
 const emojiParts: EmojiPart[] = ["Head", "Hat", "Eyes", "Mouth"];
@@ -23,8 +28,6 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
   const [selectedPart, setSelectedPart] = useState<EmojiPart>("Head");
   const [mode, setMode] = useState<EditMode>("none");
 
-  const [size, setSize] = useState(100);
-  const [rotation, setRotation] = useState(0);
   const [color, setColor] = useState("#FFA500");
 
   const handleSelectModel = (part: EmojiPart, modelId: HeadShapeType) => {
@@ -38,9 +41,9 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
       case "position":
         return <JoystickController setPosition={props.setPosition} position={props.position} />;
       case "size":
-        return <SizeSlider value={size} onChange={setSize} />;
+        return <SizeControlSimple sizeX={props.size.x} sizeY={props.size.y} onChange={props.setSize} />;
       case "rotation":
-        return <RotationSlider value={rotation} onChange={setRotation} />;
+        return <RotationJoystick value={props.rotation} onChange={props.setRotation} />;
       case "color":
         return <ColorPicker value={color} onChange={setColor} />;
       case "none":

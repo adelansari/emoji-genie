@@ -6,29 +6,35 @@ type EmojiCanvasProps = {
     x: number;
     y: number;
   };
+  rotation: number;
+  size: {
+    x: number;
+    y: number;
+  };
   headShape: HeadShapeType;
 };
 
 export default function EmojiCanvas(props: EmojiCanvasProps) {
   const canvasSize = 600;
-  const elementBaseSize = 100;
+  const scaleX = props.size.x / 100;
+  const scaleY = props.size.y / 100;
   const elementColor = "orange";
-  const elementRotation = 0;
 
   const renderHeadShape = () => {
+    const modelData = headModels.find(m => m.id === props.headShape);
+
     const commonProps = {
       x: props.position.x,
       y: props.position.y,
       fill: elementColor,
-      rotation: elementRotation,
+      rotation: props.rotation,
       shadowBlur: 10,
       shadowColor: "black",
-      scaleX: elementBaseSize / 100,
-      scaleY: elementBaseSize / 100,
+      scaleX: scaleX,
+      scaleY: scaleY,
       offsetX: 0,
       offsetY: 0,
     };
-    const modelData = headModels.find(m => m.id === props.headShape);
 
     if (modelData?.konvaData) {
       return <Path {...commonProps} data={modelData.konvaData} />;
@@ -54,8 +60,8 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
             fill="#555"
           />
           {renderHeadShape()}
-        </Layer>
-      </Stage>
-    </div>
+        </Layer >
+      </Stage >
+    </div >
   );
 }
