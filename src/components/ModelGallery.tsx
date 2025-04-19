@@ -28,7 +28,7 @@ export default function ModelGallery({ selectedPart, onSelectModel, currentHeadM
             width="24"
             height="24"
           >
-            <path d={modelData.svgPath} />
+            <path d={model.svgPath} />
           </svg>
         </button>
       );
