@@ -10,8 +10,7 @@ export default function ModelGallery({ selectedPart, onSelectModel, currentHeadM
 
   const renderHeadModels = () => {
     return headModels.map((model: HeadModel) => {
-      const modelData = headModels.find(m => m.id === model.id);
-      if (!modelData?.svgPath) return null;
+      if (!model.svgPath) return null;
 
       return (
         <button
