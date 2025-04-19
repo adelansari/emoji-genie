@@ -27,3 +27,8 @@ body {
   scrollbar-width: thin;
   scrollbar-color: theme('colors.yellow.500') theme('colors.gray.800');
 }
+
+/* Hide the input fields (Hex/RGB/HSL) in ChromePicker */
+.chrome-picker-wrapper .chrome-picker > div:nth-child(2) > div:nth-child(2) {
+  display: none !important;
+}

@@ -1,19 +1,67 @@
+
+import { ColorResult, ChromePicker, TwitterPicker } from 'react-color';
 type ColorPickerProps = {
   value: string;
   onChange: (value: string) => void;
 };
 
 export default function ColorPicker({ value, onChange }: ColorPickerProps) {
+  const handleChangeComplete = (color: ColorResult) => {
+    onChange(color.hex);
+  };
+
+  const handleChange = (color: ColorResult) => {
+    onChange(color.hex);
+  };
+
   return (
-    <div className="p-4 bg-gray-700/50 rounded-lg mt-4 flex flex-col items-center">
-      <h3 className="text-lg font-semibold mb-2 text-yellow-300">Color</h3>
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-20 h-10 p-1 bg-gray-600 border border-gray-500 rounded cursor-pointer"
+    <div className="bg-gray-700/50 rounded-lg mt-4 flex flex-col items-center">
+      <div className="chrome-picker-wrapper w-full">
+        <ChromePicker
+          color={value}
+          onChange={handleChange}
+          onChangeComplete={handleChangeComplete}
+          disableAlpha={true}
+          styles={{
+            default: {
+              picker: {
+                width: '100%',
+                backgroundColor: 'transparent',
+                boxShadow: 'none',
+                color: "white",
+              },
+              saturation: {
+                width: '100%',
+                paddingBottom: '40%',
+                position: 'relative',
+                overflow: 'hidden',
+              },
+            },
+          }}
+        />
+      </div>
+      <TwitterPicker
+        color={value}
+        onChangeComplete={handleChangeComplete}
+        triangle='hide'
+        styles={{
+          default: {
+            card: {
+              width: '100%',
+              backgroundColor: 'transparent',
+              boxShadow: 'none',
+              color: "white",
+              marginTop: '-10px',
+            },
+            input: {
+              backgroundColor: 'white',
+              opacity: 0.7,
+              color: 'black',
+              height: '30px',
+            },
+          },
+        }}
       />
-      <p className="text-center mt-2">{value}</p>
     </div>
   );
 }
