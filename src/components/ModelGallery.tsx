@@ -1,7 +1,7 @@
 
 export default function ModelGallery() {
   return (
-    <div>
+    <div className="flex justify-between">
       <div>
         <img src="" alt="model 1" />
       </div>

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import JoystickController from "./JoystickController";
 import ModelGallery from "./ModelGallery";
+import SizeSlider from "./SizeSlider"; // Import SizeSlider
+import RotationSlider from "./RotationSlider"; // Import RotationSlider
+import ColorPicker from "./ColorPicker"; // Import ColorPicker
 
 type CustomizationMenuProps = {
   setPosition: (position: { x: number; y: number }) => void;
@@ -29,48 +32,14 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
       case "position":
         return <JoystickController setPosition={props.setPosition} position={props.position} />;
       case "size":
-        return (
-          <div className="p-4 bg-gray-700/50 rounded-lg mt-4">
-            <h3 className="text-lg font-semibold mb-2 text-yellow-300">Size</h3>
-            <input
-              type="range"
-              min="50"
-              max="200"
-              value={size}
-              onChange={(e) => setSize(Number(e.target.value))}
-              className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-yellow-400"
-            />
-            <p className="text-center mt-2">{size}%</p>
-          </div>
-        );
+        // Use SizeSlider component
+        return <SizeSlider value={size} onChange={setSize} />;
       case "rotation":
-        return (
-          <div className="p-4 bg-gray-700/50 rounded-lg mt-4">
-            <h3 className="text-lg font-semibold mb-2 text-yellow-300">Rotation</h3>
-            <input
-              type="range"
-              min="0"
-              max="360"
-              value={rotation}
-              onChange={(e) => setRotation(Number(e.target.value))}
-              className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-yellow-400"
-            />
-            <p className="text-center mt-2">{rotation}°</p>
-          </div>
-        );
+        // Use RotationSlider component
+        return <RotationSlider value={rotation} onChange={setRotation} />;
       case "color":
-        return (
-          <div className="p-4 bg-gray-700/50 rounded-lg mt-4 flex flex-col items-center">
-            <h3 className="text-lg font-semibold mb-2 text-yellow-300">Color</h3>
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-20 h-10 p-1 bg-gray-600 border border-gray-500 rounded cursor-pointer"
-            />
-            <p className="text-center mt-2">{color}</p>
-          </div>
-        );
+        // Use ColorPicker component
+        return <ColorPicker value={color} onChange={setColor} />;
       case "none":
       default:
         return null;
