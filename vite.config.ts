@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import svgr from 'vite-plugin-svgr'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
@@ -11,9 +10,7 @@ export default defineConfig({
     svgr({
       svgrOptions: {
         svgo: false,
-        // Ensure fill attributes are not removed
         plugins: ['@svgr/plugin-svgo', '@svgr/plugin-jsx'],
-        // Prevent replacing attributes with currentColor
         replaceAttrValues: {},
       },
       include: "**/*.svg",
