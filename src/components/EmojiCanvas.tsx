@@ -1,5 +1,6 @@
 import { headModels, HeadShapeType } from "../data/headModels";
 import { EyeShapeType, eyeModels } from "../data/eyeModels";
+import { MouthShapeType, mouthModels } from "../data/mouthModels";
 
 type EmojiCanvasProps = {
   position: {
@@ -14,9 +15,11 @@ type EmojiCanvasProps = {
   headShape: HeadShapeType;
   leftEyeShape: EyeShapeType;
   rightEyeShape: EyeShapeType;
+  mouthShape: MouthShapeType;
   headColor: string;
   leftEyeColor: string;
   rightEyeColor: string;
+  mouthColor: string;
 };
 
 export default function EmojiCanvas(props: EmojiCanvasProps) {
@@ -28,6 +31,9 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
   const LeftEyeSvgComponent = leftEyeModelData?.SvgComponent;
   const rightEyeModelData = eyeModels.find(m => m.id === props.rightEyeShape);
   const RightEyeSvgComponent = rightEyeModelData?.SvgComponent;
+
+  const mouthModelData = mouthModels.find(m => m.id === props.mouthShape);
+  const MouthSvgComponent = mouthModelData?.SvgComponent;
 
   const headScaleX = props.size.x / 100;
   const headScaleY = props.size.y / 100;
@@ -63,6 +69,22 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
     fill: props.rightEyeColor,
   };
 
+  const mouthBaseSize = 60;
+  const mouthScale = 1;
+  const mouthOffsetY = 22;
+
+  const mouthStyle = {
+    position: 'absolute' as const,
+    left: `${props.position.x}px`,
+    top: `${props.position.y + mouthOffsetY * headScaleY}px`,
+    width: `${mouthBaseSize * headScaleX * mouthScale}px`,
+    height: `${mouthBaseSize * headScaleY * mouthScale}px`,
+    transform: `translate(-50%, -50%) rotate(${props.rotation}deg)`,
+    transformOrigin: 'center center',
+    fill: props.mouthColor,
+  };
+
+
   return (
     <div
       className="bg-gray-700 rounded-lg shadow-xl overflow-hidden relative"
@@ -86,6 +108,12 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
       {RightEyeSvgComponent && (
         <RightEyeSvgComponent
           style={rightEyeStyle}
+        />
+      )}
+
+      {MouthSvgComponent && (
+        <MouthSvgComponent
+          style={mouthStyle}
         />
       )}
 

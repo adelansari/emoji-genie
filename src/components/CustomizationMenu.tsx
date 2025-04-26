@@ -6,6 +6,7 @@ import RotationJoystick from "./RotationJoystick";
 import ColorPicker from "./ColorPicker";
 import { HeadShapeType } from "../data/headModels";
 import { EyeShapeType } from "../data/eyeModels";
+import { MouthShapeType } from "../data/mouthModels";
 
 type CustomizationMenuProps = {
   setPosition: (position: { x: number; y: number }) => void;
@@ -20,12 +21,16 @@ type CustomizationMenuProps = {
   onSelectLeftEyeModel: (modelId: EyeShapeType) => void;
   selectedRightEyeModel: EyeShapeType;
   onSelectRightEyeModel: (modelId: EyeShapeType) => void;
+  selectedMouthModel: MouthShapeType;
+  onSelectMouthModel: (modelId: MouthShapeType) => void;
   headColor: string;
   setHeadColor: (color: string) => void;
   leftEyeColor: string;
   setLeftEyeColor: (color: string) => void;
   rightEyeColor: string;
   setRightEyeColor: (color: string) => void;
+  mouthColor: string;
+  setMouthColor: (color: string) => void;
 };
 
 
@@ -46,6 +51,8 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
       props.onSelectLeftEyeModel(modelId as EyeShapeType);
     } else if (part === "Right Eye") {
       props.onSelectRightEyeModel(modelId as EyeShapeType);
+    } else if (part === "Mouth") {
+      props.onSelectMouthModel(modelId as MouthShapeType);
     }
   };
 
@@ -66,8 +73,9 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
           case "Right Eye":
             return <ColorPicker value={props.rightEyeColor} onChange={props.setRightEyeColor} />;
           case "Mouth":
+            return <ColorPicker value={props.mouthColor} onChange={props.setMouthColor} />;
           default:
-            return <p className="text-center text-gray-400 pt-4">Color customization not available for Mouth yet.</p>;
+            return <p className="text-center text-gray-400 pt-4">Color customization not available for this part.</p>;
         }
       case "none":
       default:
@@ -78,7 +86,6 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
   const isColorModeDisabled = () => {
     if (mode !== 'color') return false;
     if (selectedPart === 'Head' && props.selectedHeadModel === 'default') return true;
-    if (selectedPart === 'Mouth') return true;
     return false;
   };
 
@@ -109,6 +116,7 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
           currentHeadModel={props.selectedHeadModel}
           currentLeftEyeModel={props.selectedLeftEyeModel}
           currentRightEyeModel={props.selectedRightEyeModel}
+          currentMouthModel={props.selectedMouthModel}
         />
       </div>
       <div className="grid grid-cols-4 gap-2">
@@ -119,8 +127,6 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
 
           if (editMode === 'color') {
             if (selectedPart === 'Head' && props.selectedHeadModel === 'default') {
-              isDisabled = true;
-            } else if (selectedPart === 'Mouth') {
               isDisabled = true;
             }
           }

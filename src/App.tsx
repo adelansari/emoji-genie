@@ -3,6 +3,7 @@ import EmojiCanvas from "./components/EmojiCanvas";
 import CustomizationMenu from "./components/CustomizationMenu";
 import { HeadShapeType } from "./data/headModels";
 import { EyeShapeType } from "./data/eyeModels";
+import { MouthShapeType } from "./data/mouthModels";
 
 function App() {
   const [position, setPosition] = useState({
@@ -17,9 +18,11 @@ function App() {
   const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("default");
   const [selectedLeftEyeModel, setSelectedLeftEyeModel] = useState<EyeShapeType>("eye1");
   const [selectedRightEyeModel, setSelectedRightEyeModel] = useState<EyeShapeType>("eye1");
+  const [selectedMouthModel, setSelectedMouthModel] = useState<MouthShapeType>("mouth1");
   const [headColor, setHeadColor] = useState("#facc15");
   const [leftEyeColor, setLeftEyeColor] = useState("#FFFFFF");
   const [rightEyeColor, setRightEyeColor] = useState("#FFFFFF");
+  const [mouthColor, setMouthColor] = useState("#000000"); // Default Black
 
 
   return (
@@ -36,9 +39,11 @@ function App() {
             headShape={selectedHeadModel}
             leftEyeShape={selectedLeftEyeModel}
             rightEyeShape={selectedRightEyeModel}
+            mouthShape={selectedMouthModel}
             headColor={headColor}
             leftEyeColor={leftEyeColor}
             rightEyeColor={rightEyeColor}
+            mouthColor={mouthColor}
           />
         </div>
         <div className="flex-shrink-0">
@@ -55,12 +60,16 @@ function App() {
             onSelectLeftEyeModel={setSelectedLeftEyeModel}
             selectedRightEyeModel={selectedRightEyeModel}
             onSelectRightEyeModel={setSelectedRightEyeModel}
+            selectedMouthModel={selectedMouthModel}
+            onSelectMouthModel={setSelectedMouthModel}
             headColor={headColor}
             setHeadColor={setHeadColor}
             leftEyeColor={leftEyeColor}
             setLeftEyeColor={setLeftEyeColor}
             rightEyeColor={rightEyeColor}
             setRightEyeColor={setRightEyeColor}
+            mouthColor={mouthColor}
+            setMouthColor={setMouthColor}
           />
         </div>
       </div>
