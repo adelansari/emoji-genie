@@ -2,22 +2,33 @@ import React from 'react';
 import { ModelBase, ModelIdType } from '../modelTypes';
 
 // Face shape models
-const faceSvgModules = import.meta.glob<{ default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>('../../assets/stickerCharacter/face/shape/*.svg', { eager: true });
+const faceShapeSvgModules = import.meta.glob<{ default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>('../../assets/stickerCharacter/face/shape/*.svg', { eager: true });
+const faceMouthSvgModules = import.meta.glob<{ default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>('../../assets/stickerCharacter/face/mouth/*.svg', { eager: true });
 
-// Eye models (will be populated later)
-const eyeSvgModules = import.meta.glob<{ default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>('../../assets/stickerCharacter/eyes/eyeShape/*.svg', { eager: true });
+// Eye models
+const eyeShapeSvgModules = import.meta.glob<{ default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>('../../assets/stickerCharacter/eyes/eyeShape/*.svg', { eager: true });
+const eyebrowsSvgModules = import.meta.glob<{ default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>('../../assets/stickerCharacter/eyes/eyebrows/*.svg', { eager: true });
 
 // Hair models
 const hairSvgModules = import.meta.glob<{ default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>('../../assets/stickerCharacter/hair/*.svg', { eager: true });
 
+// Other models
+const othersSvgModules = import.meta.glob<{ default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>('../../assets/stickerCharacter/others/*.svg', { eager: true });
+
 export type StickerPartType = 'face' | 'eyes' | 'hair' | 'others';
+export type StickerSubcategoryType = 'shape' | 'mouth' | 'eyeShape' | 'eyebrows' | 'default';
 
 export interface StickerModel extends ModelBase {
   partType: StickerPartType;
+  subcategory: StickerSubcategoryType;
 }
 
 // Helper function to create models from SVG modules
-function createModels(modules: Record<string, { default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>, partType: StickerPartType): StickerModel[] {
+function createModels(
+  modules: Record<string, { default: React.FunctionComponent<React.SVGProps<SVGSVGElement>> }>, 
+  partType: StickerPartType,
+  subcategory: StickerSubcategoryType
+): StickerModel[] {
   return Object.entries(modules)
     .map(([path, module]) => {
       const SvgComponent = module.default;
@@ -40,27 +51,75 @@ function createModels(modules: Record<string, { default: React.FunctionComponent
         id: filename,
         name: name || filename,
         SvgComponent,
-        partType
+        partType,
+        subcategory
       };
     })
     .filter((model): model is StickerModel => model !== null);
 }
 
-// Create models for each part type
-export const stickerFaceModels = createModels(faceSvgModules, 'face');
-export const stickerEyesModels = createModels(eyeSvgModules, 'eyes');
-export const stickerHairModels = createModels(hairSvgModules, 'hair');
-export const stickerOthersModels: StickerModel[] = []; // Placeholder for now
+// Create models for each part type and subcategory
+export const stickerFaceShapeModels = createModels(faceShapeSvgModules, 'face', 'shape');
+export const stickerFaceMouthModels = createModels(faceMouthSvgModules, 'face', 'mouth');
+export const stickerEyeShapeModels = createModels(eyeShapeSvgModules, 'eyes', 'eyeShape');
+export const stickerEyebrowsModels = createModels(eyebrowsSvgModules, 'eyes', 'eyebrows');
+export const stickerHairModels = createModels(hairSvgModules, 'hair', 'default');
+export const stickerOthersModels = createModels(othersSvgModules, 'others', 'default');
 
-// Combine all models for easy access
-export const stickerModels = {
-  face: stickerFaceModels,
-  eyes: stickerEyesModels,
-  hair: stickerHairModels,
-  others: stickerOthersModels
+// Define available subcategories for each part type
+export const subcategories: Record<StickerPartType, StickerSubcategoryType[]> = {
+  face: ['shape', 'mouth'],
+  eyes: ['eyeShape', 'eyebrows'],
+  hair: ['default'],
+  others: ['default']
 };
 
-// Helper function to find a model by ID and part type
-export function findStickerModel(partType: StickerPartType, id: ModelIdType): StickerModel | undefined {
-  return stickerModels[partType].find(model => model.id === id);
+// Display names for subcategories
+export const subcategoryNames: Record<StickerSubcategoryType, string> = {
+  shape: 'Shape',
+  mouth: 'Mouth',
+  eyeShape: 'Eye Shape',
+  eyebrows: 'Eyebrows',
+  default: 'Options'
+};
+
+// Combine all models for easy access by part type and subcategory
+export const stickerModels: Record<StickerPartType, Record<StickerSubcategoryType, StickerModel[]>> = {
+  face: {
+    shape: stickerFaceShapeModels,
+    mouth: stickerFaceMouthModels,
+    eyeShape: [],
+    eyebrows: [],
+    default: []
+  },
+  eyes: {
+    shape: [],
+    mouth: [],
+    eyeShape: stickerEyeShapeModels,
+    eyebrows: stickerEyebrowsModels,
+    default: []
+  },
+  hair: {
+    shape: [],
+    mouth: [],
+    eyeShape: [],
+    eyebrows: [],
+    default: stickerHairModels
+  },
+  others: {
+    shape: [],
+    mouth: [],
+    eyeShape: [],
+    eyebrows: [],
+    default: stickerOthersModels
+  }
+};
+
+// Helper function to find a model by part type, subcategory and id
+export function findStickerModel(
+  partType: StickerPartType, 
+  subcategory: StickerSubcategoryType,
+  id: ModelIdType
+): StickerModel | undefined {
+  return stickerModels[partType][subcategory].find(model => model.id === id);
 }
