@@ -17,11 +17,11 @@ function EmojiCanvas() {
   const headModel = findEmojiModel('head', selectedEmojiModels.head || 'default');
   
   // Get transform for head
-  const headTransform = getTransform('emoji', 'head');
+  const headTransform = getTransform('emoji', 'head', 'default');
   
   // Helper function to create style based on transform
   const createStyle = (part: string) => {
-    const transform = getTransform('emoji', part);
+    const transform = getTransform('emoji', part, 'default');
     const { position, rotation, size } = transform;
     const scaleX = size.x / 100;
     const scaleY = size.y / 100;

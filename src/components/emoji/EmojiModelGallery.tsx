@@ -40,11 +40,14 @@ export default function EmojiModelGallery() {
             }`}
             title={model.name}
           >
-            <model.SvgComponent
-              width="32"
-              height="32"
-              fill={fillColor}
-            />
+            <div className="flex items-center justify-center w-full h-full">
+              <model.SvgComponent
+                width="48"
+                height="48"
+                className="w-full h-full max-w-full max-h-full"
+                fill={fillColor}
+              />
+            </div>
           </button>
         );
       })}
