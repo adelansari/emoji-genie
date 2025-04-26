@@ -1,15 +1,12 @@
 import { memo, useCallback } from 'react';
+import { useEmojiCustomization } from "../context/EmojiCustomizationContext"; // Import the hook
 
-type RotationSliderProps = {
-  value: number;
-  onChange: (value: number) => void;
-};
-
-function RotationSlider({ value, onChange }: RotationSliderProps) {
+function RotationSlider() {
+  const { rotation, setRotation } = useEmojiCustomization();
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(Number(e.target.value));
-  }, [onChange]);
+    setRotation(Number(e.target.value));
+  }, [setRotation]);
 
   return (
     <div className="p-4 bg-gray-700/50 rounded-lg mt-4">
@@ -18,11 +15,11 @@ function RotationSlider({ value, onChange }: RotationSliderProps) {
         type="range"
         min="0"
         max="360"
-        value={value}
+        value={rotation}
         onChange={handleChange}
         className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-yellow-400"
       />
-      <p className="text-center mt-2">{value}°</p>
+      <p className="text-center mt-2">{rotation}°</p>
     </div>
   );
 }

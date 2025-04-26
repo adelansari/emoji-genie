@@ -1,78 +1,62 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { Lock, Unlock, RotateCcw } from 'lucide-react';
+import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
-type SizeControlSimpleProps = {
-    sizeX: number;
-    sizeY: number;
-    onChange: (newSize: { x: number; y: number }) => void;
-    minSize?: number;
-    maxSize?: number;
-};
+const SizeControlSimpleComponent = ({ minSize = 1, maxSize = 500 }) => {
+    const { size, setSize } = useEmojiCustomization();
+    const sizeX = size.x;
+    const sizeY = size.y;
 
-const SizeControlSimpleComponent = ({
-    sizeX,
-    sizeY,
-    onChange,
-    minSize = 1,
-    maxSize = 500,
-}: SizeControlSimpleProps) => {
-    const [isLocked, setIsLocked] = useState(true); // Start locked by default
+    const [isLocked, setIsLocked] = useState(true);
     const [aspectRatio, setAspectRatio] = useState(sizeY !== 0 ? sizeX / sizeY : 1);
 
-    // Update aspect ratio when size changes *only if unlocked*
     useEffect(() => {
         if (!isLocked && sizeY !== 0) {
             setAspectRatio(sizeX / sizeY);
         }
-        // If locked, the ratio used is the one stored when it was last unlocked or initialized
     }, [sizeX, sizeY, isLocked]);
 
     const handleXChange = useCallback((newX: number) => {
         if (isLocked) {
             const newY = aspectRatio !== 0 ? Math.round(newX / aspectRatio) : sizeY;
             const clampedY = Math.max(minSize, Math.min(maxSize, newY));
-            // Ensure we don't exceed bounds when calculating linked value
             if (newY >= minSize && newY <= maxSize) {
-                onChange({ x: newX, y: clampedY });
+                setSize({ x: newX, y: clampedY });
             } else {
-                // If linked Y is out of bounds, only update X up to the limit allowed by Y's bounds
                 const limitedX = Math.round(clampedY * aspectRatio);
-                onChange({ x: Math.max(minSize, Math.min(maxSize, limitedX)), y: clampedY });
+                setSize({ x: Math.max(minSize, Math.min(maxSize, limitedX)), y: clampedY });
             }
         } else {
-            onChange({ x: newX, y: sizeY });
+            setSize({ x: newX, y: sizeY });
         }
-    }, [isLocked, aspectRatio, sizeY, minSize, maxSize, onChange]);
+    }, [isLocked, aspectRatio, sizeY, minSize, maxSize, setSize]);
 
     const handleYChange = useCallback((newY: number) => {
         if (isLocked) {
             const newX = Math.round(newY * aspectRatio);
             const clampedX = Math.max(minSize, Math.min(maxSize, newX));
-            // Ensure we don't exceed bounds when calculating linked value
             if (newX >= minSize && newX <= maxSize) {
-                onChange({ x: clampedX, y: newY });
+                setSize({ x: clampedX, y: newY });
             } else {
-                // If linked X is out of bounds, only update Y up to the limit allowed by X's bounds
                 const limitedY = aspectRatio !== 0 ? Math.round(clampedX / aspectRatio) : sizeY;
-                onChange({ x: clampedX, y: Math.max(minSize, Math.min(maxSize, limitedY)) });
+                setSize({ x: clampedX, y: Math.max(minSize, Math.min(maxSize, limitedY)) });
             }
         } else {
-            onChange({ x: sizeX, y: newY });
+            setSize({ x: sizeX, y: newY });
         }
-    }, [isLocked, aspectRatio, sizeX, minSize, maxSize, onChange]);
+    }, [isLocked, aspectRatio, sizeX, minSize, maxSize, setSize]);
 
     const toggleLock = useCallback(() => {
         const nextLockedState = !isLocked;
         setIsLocked(nextLockedState);
-        // When locking, recalculate and store the current aspect ratio
         if (nextLockedState && sizeY !== 0) {
             setAspectRatio(sizeX / sizeY);
         }
     }, [isLocked, sizeX, sizeY]);
 
     const handleReset = useCallback(() => {
-        onChange({ x: 100, y: 100 });
-    }, [onChange]);
+        setSize({ x: 100, y: 100 });
+    }, [setSize]);
 
     const handleXInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         handleXChange(Number(e.target.value));
@@ -101,7 +85,6 @@ const SizeControlSimpleComponent = ({
                 </div>
             </div>
             <div className="w-full flex flex-col gap-5">
-                {/* X Slider */}
                 <div className="flex items-center gap-3">
                     <label htmlFor="sizeXSliderSimple" className="font-medium text-sm w-4 text-gray-300">X:</label>
                     <input
@@ -110,13 +93,12 @@ const SizeControlSimpleComponent = ({
                         min={minSize}
                         max={maxSize}
                         value={sizeX}
-                        onChange={handleXInputChange} // Use memoized handler
+                        onChange={handleXInputChange}
                         className={sliderClass}
                         aria-label="X Size"
                     />
                     <span className="text-sm w-10 text-right text-gray-300">{sizeX}%</span>
                 </div>
-                {/* Y Slider */}
                 <div className="flex items-center gap-3">
                     <label htmlFor="sizeYSliderSimple" className="font-medium text-sm w-4 text-gray-300">Y:</label>
                     <input
@@ -125,7 +107,7 @@ const SizeControlSimpleComponent = ({
                         min={minSize}
                         max={maxSize}
                         value={sizeY}
-                        onChange={handleYInputChange} // Use memoized handler
+                        onChange={handleYInputChange}
                         className={sliderClass}
                         aria-label="Y Size"
                     />

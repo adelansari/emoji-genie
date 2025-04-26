@@ -1,13 +1,11 @@
 import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { Circle, Layer, Stage, Line } from "react-konva";
 import Konva from "konva";
+import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
-type RotationJoystickProps = {
-  value: number; // Rotation value in degrees (0-360)
-  onChange: (value: number) => void;
-};
+const RotationJoystickComponent = () => {
+  const { rotation, setRotation } = useEmojiCustomization();
 
-const RotationJoystickComponent = ({ value, onChange }: RotationJoystickProps) => {
   const containerSize = 200;
   const center = { x: containerSize / 2, y: containerSize / 2 };
   const trackRadius = 80;
@@ -17,7 +15,6 @@ const RotationJoystickComponent = ({ value, onChange }: RotationJoystickProps) =
   const stageRef = useRef<Konva.Stage>(null);
 
   const calculateHandlePosition = useCallback((angleDegrees: number) => {
-    // Convert degrees to radians, adjusting so 0 degrees is 'up'
     const angleRadians = ((angleDegrees - 90) * Math.PI) / 180;
     return {
       x: center.x + trackRadius * Math.cos(angleRadians),
@@ -25,14 +22,13 @@ const RotationJoystickComponent = ({ value, onChange }: RotationJoystickProps) =
     };
   }, [center.x, center.y, trackRadius]);
 
-  const [handlePosition, setHandlePosition] = useState(calculateHandlePosition(value));
+  const [handlePosition, setHandlePosition] = useState(calculateHandlePosition(rotation));
 
   useEffect(() => {
-    // Only update handle position based on external value if NOT dragging
     if (!isDragging) {
-      setHandlePosition(calculateHandlePosition(value));
+      setHandlePosition(calculateHandlePosition(rotation));
     }
-  }, [value, calculateHandlePosition, isDragging]);
+  }, [rotation, calculateHandlePosition, isDragging]);
 
   const calculateAngleFromPosition = useCallback((x: number, y: number) => {
     const dx = x - center.x;
@@ -49,16 +45,14 @@ const RotationJoystickComponent = ({ value, onChange }: RotationJoystickProps) =
     const node = e.target;
     const pos = node.position();
     const newRotation = calculateAngleFromPosition(pos.x, pos.y);
-    onChange(newRotation);
-    // Konva updates position automatically, no need for setHandlePosition here during drag
-    setIsDragging(true); // Keep track for visual feedback
-  }, [onChange, calculateAngleFromPosition]);
+    setRotation(newRotation);
+    setIsDragging(true);
+  }, [setRotation, calculateAngleFromPosition]);
 
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
-    // Ensure final position matches the value after drag ends
-    setHandlePosition(calculateHandlePosition(value));
-  }, [value, calculateHandlePosition]);
+    setHandlePosition(calculateHandlePosition(rotation));
+  }, [rotation, calculateHandlePosition]);
 
   const dragBoundFunc = useCallback((pos: { x: number; y: number }) => {
     const dx = pos.x - center.x;

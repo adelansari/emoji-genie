@@ -1,16 +1,11 @@
 import { useState, useRef, useCallback, memo } from "react";
 import { Circle, Layer, Stage } from "react-konva";
 import Konva from "konva";
+import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
-type JoystickControllerProps = {
-  setPosition: (position: { x: number; y: number }) => void;
-  position: {
-    x: number;
-    y: number;
-  };
-};
+function JoystickController() {
+  const { position, setPosition } = useEmojiCustomization();
 
-function JoystickController(props: JoystickControllerProps) {
   const containerSize = 200;
   const center = { x: containerSize / 2, y: containerSize / 2 };
   const controlRadius = 80;
@@ -18,10 +13,10 @@ function JoystickController(props: JoystickControllerProps) {
 
   const canvasSize = 600;
   const elementSize = 100;
-  const initialIndicatorX = center.x + ((props.position.x - canvasSize / 2) / (canvasSize / 2)) * controlRadius;
-  const initialIndicatorY = center.y + ((props.position.y - canvasSize / 2) / (canvasSize / 2)) * controlRadius;
+  const initialIndicatorX = center.x + ((position.x - canvasSize / 2) / (canvasSize / 2)) * controlRadius;
+  const initialIndicatorY = center.y + ((position.y - canvasSize / 2) / (canvasSize / 2)) * controlRadius;
 
-  const [indicatorPosition, setIndicatorPosition] = useState({ x: initialIndicatorX, y: initialIndicatorY });
+  const [indicatorPosition] = useState({ x: initialIndicatorX, y: initialIndicatorY });
   const [isDragging, setIsDragging] = useState(false);
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -38,8 +33,8 @@ function JoystickController(props: JoystickControllerProps) {
     const clampedX = Math.max(elementSize / 2, Math.min(canvasSize - elementSize / 2, targetX));
     const clampedY = Math.max(elementSize / 2, Math.min(canvasSize - elementSize / 2, targetY));
 
-    props.setPosition({ x: clampedX, y: clampedY });
-  }, [props.setPosition, center.x, center.y, controlRadius, canvasSize, elementSize]);
+    setPosition({ x: clampedX, y: clampedY });
+  }, [setPosition, center.x, center.y, controlRadius, canvasSize, elementSize]);
 
   const handleDragMove = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;

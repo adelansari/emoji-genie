@@ -1,24 +1,23 @@
-
 import { ColorResult, ChromePicker, TwitterPicker } from 'react-color';
-type ColorPickerProps = {
-  value: string;
-  onChange: (value: string) => void;
-};
+import { useEmojiCustomization } from "../context/EmojiCustomizationContext"; // Import the hook
+import { useCallback, memo } from 'react';
 
-export default function ColorPicker({ value, onChange }: ColorPickerProps) {
-  const handleChangeComplete = (color: ColorResult) => {
-    onChange(color.hex);
-  };
+function ColorPickerComponent() {
+  const { color, setColor } = useEmojiCustomization();
 
-  const handleChange = (color: ColorResult) => {
-    onChange(color.hex);
-  };
+  const handleChangeComplete = useCallback((colorResult: ColorResult) => {
+    setColor(colorResult.hex);
+  }, [setColor]);
+
+  const handleChange = useCallback((colorResult: ColorResult) => {
+    setColor(colorResult.hex);
+  }, [setColor]);
 
   return (
     <div className="bg-gray-700/50 rounded-lg flex flex-col items-center">
       <div className="chrome-picker-wrapper w-full">
         <ChromePicker
-          color={value}
+          color={color}
           onChange={handleChange}
           onChangeComplete={handleChangeComplete}
           disableAlpha={true}
@@ -41,7 +40,7 @@ export default function ColorPicker({ value, onChange }: ColorPickerProps) {
         />
       </div>
       <TwitterPicker
-        color={value}
+        color={color}
         onChangeComplete={handleChangeComplete}
         triangle='hide'
         styles={{
@@ -65,3 +64,5 @@ export default function ColorPicker({ value, onChange }: ColorPickerProps) {
     </div>
   );
 }
+
+export default memo(ColorPickerComponent);
