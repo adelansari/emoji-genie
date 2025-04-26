@@ -1,31 +1,21 @@
-import { headModels, HeadShapeType } from "../data/headModels";
+import { headModels } from "../data/headModels";
+import { memo } from 'react';
+import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
-type EmojiCanvasProps = {
-  position: {
-    x: number;
-    y: number;
-  };
-  rotation: number;
-  size: {
-    x: number;
-    y: number;
-  };
-  headShape: HeadShapeType;
-  color: string;
-};
+function EmojiCanvas() {
+  const { position, rotation, size, selectedHeadModel, color } = useEmojiCustomization();
 
-export default function EmojiCanvas(props: EmojiCanvasProps) {
   const canvasSize = 600;
-  const modelData = headModels.find(m => m.id === props.headShape);
+  const modelData = headModels.find(m => m.id === selectedHeadModel);
   const SvgComponent = modelData?.SvgComponent;
 
-  const scaleX = props.size.x / 100;
-  const scaleY = props.size.y / 100;
+  const scaleX = size.x / 100;
+  const scaleY = size.y / 100;
   const containerStyle = {
     position: 'absolute' as const,
-    left: `${props.position.x}px`,
-    top: `${props.position.y}px`,
-    transform: `translate(-50%, -50%) rotate(${props.rotation}deg) scale(${scaleX}, ${scaleY})`,
+    left: `${position.x}px`,
+    top: `${position.y}px`,
+    transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`,
     transformOrigin: 'center center',
     width: '100px',
     height: '100px'
@@ -41,15 +31,16 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
       {SvgComponent && (
         <SvgComponent
           style={containerStyle}
-          // Conditionally pass fill: only if not the default model
-          fill={props.headShape === 'default' ? undefined : props.color}
+          fill={selectedHeadModel === 'default' ? undefined : color}
         />
       )}
       {!SvgComponent && (
         <p style={{ color: 'white', textAlign: 'center', paddingTop: '50px' }}>
-          Head model not found: {props.headShape}
+          Head model not found: {selectedHeadModel}
         </p>
       )}
     </div>
   );
 }
+
+export default memo(EmojiCanvas);

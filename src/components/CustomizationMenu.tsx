@@ -5,20 +5,7 @@ import SizeControlSimple from "./SizeControlSimple";
 import RotationJoystick from "./RotationJoystick";
 import ColorPicker from "./ColorPicker";
 import { HeadShapeType } from "../data/headModels";
-
-type CustomizationMenuProps = {
-  setPosition: (position: { x: number; y: number }) => void;
-  position: { x: number; y: number };
-  setRotation: (rotation: number) => void;
-  rotation: number;
-  setSize: (size: { x: number; y: number }) => void;
-  size: { x: number; y: number };
-  selectedHeadModel: HeadShapeType;
-  onSelectHeadModel: (modelId: HeadShapeType) => void;
-  color: string;
-  setColor: (color: string) => void;
-};
-
+import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
 type EmojiPart = "Head" | "Hat" | "Eyes" | "Mouth";
 const emojiParts: EmojiPart[] = ["Head", "Hat", "Eyes", "Mouth"];
@@ -26,26 +13,30 @@ const emojiParts: EmojiPart[] = ["Head", "Hat", "Eyes", "Mouth"];
 type EditMode = "none" | "position" | "size" | "rotation" | "color";
 const editModes: EditMode[] = ["position", "size", "rotation", "color"];
 
-export default function CustomizationMenu(props: CustomizationMenuProps) {
+export default function CustomizationMenu() {
+  const {
+    setSelectedHeadModel,
+  } = useEmojiCustomization();
+
   const [selectedPart, setSelectedPart] = useState<EmojiPart>("Head");
   const [mode, setMode] = useState<EditMode>("none");
 
   const handleSelectModel = (part: EmojiPart, modelId: HeadShapeType) => {
     if (part === "Head") {
-      props.onSelectHeadModel(modelId);
+      setSelectedHeadModel(modelId);
     }
   };
 
   const renderEditControl = () => {
     switch (mode) {
       case "position":
-        return <JoystickController setPosition={props.setPosition} position={props.position} />;
+        return <JoystickController />;
       case "size":
-        return <SizeControlSimple sizeX={props.size.x} sizeY={props.size.y} onChange={props.setSize} />;
+        return <SizeControlSimple />;
       case "rotation":
-        return <RotationJoystick value={props.rotation} onChange={props.setRotation} />;
+        return <RotationJoystick />;
       case "color":
-        return <ColorPicker value={props.color} onChange={props.setColor} />;
+        return <ColorPicker />;
       case "none":
       default:
         return null;
@@ -76,7 +67,6 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
         <ModelGallery
           selectedPart={selectedPart}
           onSelectModel={handleSelectModel}
-          currentHeadModel={props.selectedHeadModel}
         />
       </div>
       <div className="grid grid-cols-4 gap-2">
@@ -89,7 +79,7 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
             <button
               key={editMode}
               onClick={() => setMode(current => current === editMode ? "none" : editMode)}
-              disabled={isDisabled} // Disable color button if Head is selected
+              disabled={isDisabled}
               className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize 
                 ${mode === editMode && !isDisabled
                   ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
@@ -104,9 +94,7 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
         })}
       </div>
       <div className="min-h-[200px]">
-        {/* Render control only if not disabled */}
         {!(mode === 'color' && selectedPart === 'Head') && renderEditControl()}
-        {/* Optionally show a message when color is disabled for Head */}
         {mode === 'color' && selectedPart === 'Head' && (
           <p className="text-center text-gray-400 pt-4">Color customization is disabled for the base head shape.</p>
         )}
