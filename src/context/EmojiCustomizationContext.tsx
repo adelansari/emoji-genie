@@ -5,6 +5,20 @@ import { StickerPartType } from '../data/sticker/stickerModels';
 
 export type EmojiType = 'emoji' | 'sticker';
 
+interface Transform {
+    position: { x: number; y: number };
+    rotation: number;
+    size: { x: number; y: number };
+    color: string;
+}
+
+const defaultTransform: Transform = {
+    position: { x: 300, y: 300 },
+    rotation: 0,
+    size: { x: 200, y: 200 },
+    color: "#FFFFFF" 
+};
+
 interface EmojiCustomizationContextType {
     position: { x: number; y: number };
     setPosition: (pos: { x: number; y: number }) => void;
@@ -31,6 +45,9 @@ interface EmojiCustomizationContextType {
     selectedStickerModels: Record<StickerPartType, ModelIdType | null>;
     setSelectedStickerModel: (part: StickerPartType, modelId: ModelIdType | null) => void;
     
+    // Get transforms for specific part types
+    getTransform: (mode: EmojiType, part: string) => Transform;
+    
     // Legacy prop for backward compatibility during refactoring
     selectedHeadModel: ModelIdType;
     setSelectedHeadModel: (model: ModelIdType) => void;
@@ -52,10 +69,6 @@ interface EmojiCustomizationProviderProps {
 }
 
 export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProps> = ({ children }) => {
-    const [position, _setPosition] = useState({ x: 300, y: 300 });
-    const [rotation, _setRotation] = useState(0);
-    const [size, _setSize] = useState({ x: 200, y: 200 }); 
-    const [color, _setColor] = useState("#FFFFFF");
     const [emojiType, _setEmojiType] = useState<EmojiType>("emoji");
     
     // Emoji mode states
@@ -70,28 +83,79 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     // Sticker mode states
     const [selectedStickerPart, _setSelectedStickerPart] = useState<StickerPartType>('face');
     const [selectedStickerModels, _setSelectedStickerModels] = useState<Record<StickerPartType, ModelIdType | null>>({
-        face: null,
+        face: 'shape01',
         eyes: null,
         hair: null,
         others: null
     });
+    
+    // Store transforms by mode and part type
+    // Using a map structure: transforms[mode][partType] = { position, rotation, size, color }
+    const [transforms, setTransforms] = useState<Record<EmojiType, Record<string, Transform>>>({
+        emoji: {
+            head: { ...defaultTransform },
+            hat: { ...defaultTransform },
+            eyes: { ...defaultTransform },
+            mouth: { ...defaultTransform }
+        },
+        sticker: {
+            face: { ...defaultTransform },
+            eyes: { ...defaultTransform },
+            hair: { ...defaultTransform },
+            others: { ...defaultTransform }
+        }
+    });
+
+    // Helper to get current active part based on mode
+    const getCurrentPart = useCallback(() => {
+        return emojiType === 'emoji' ? selectedEmojiPart : selectedStickerPart;
+    }, [emojiType, selectedEmojiPart, selectedStickerPart]);
+
+    // Get transform for a specific mode and part
+    const getTransform = useCallback((mode: EmojiType, part: string) => {
+        return transforms[mode][part] || defaultTransform;
+    }, [transforms]);
+    
+    // Get current active transform
+    const getCurrentTransform = useCallback(() => {
+        const currentMode = emojiType;
+        const currentPart = getCurrentPart();
+        return getTransform(currentMode, currentPart);
+    }, [emojiType, getCurrentPart, getTransform]);
+
+    // Update transform for current active part
+    const updateCurrentTransform = useCallback((updates: Partial<Transform>) => {
+        const currentMode = emojiType;
+        const currentPart = getCurrentPart();
+        
+        setTransforms(prev => ({
+            ...prev,
+            [currentMode]: {
+                ...prev[currentMode],
+                [currentPart]: {
+                    ...prev[currentMode][currentPart],
+                    ...updates
+                }
+            }
+        }));
+    }, [emojiType, getCurrentPart]);
 
     // Memoized setters
     const setPosition = useCallback((newPosition: { x: number; y: number }) => {
-        _setPosition(newPosition);
-    }, []);
+        updateCurrentTransform({ position: newPosition });
+    }, [updateCurrentTransform]);
 
     const setRotation = useCallback((newRotation: number) => {
-        _setRotation(newRotation);
-    }, []);
+        updateCurrentTransform({ rotation: newRotation });
+    }, [updateCurrentTransform]);
 
     const setSize = useCallback((newSize: { x: number; y: number }) => {
-        _setSize(newSize);
-    }, []);
+        updateCurrentTransform({ size: newSize });
+    }, [updateCurrentTransform]);
 
     const setColor = useCallback((newColor: string) => {
-        _setColor(newColor);
-    }, []);
+        updateCurrentTransform({ color: newColor });
+    }, [updateCurrentTransform]);
     
     const setEmojiType = useCallback((newType: EmojiType) => {
         _setEmojiType(newType);
@@ -124,14 +188,17 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         setSelectedEmojiModel('head', modelId);
     }, [setSelectedEmojiModel]);
 
+    // Get current transform values for the provider
+    const currentTransform = getCurrentTransform();
+
     const value = {
-        position,
+        position: currentTransform.position,
         setPosition,
-        rotation,
+        rotation: currentTransform.rotation,
         setRotation,
-        size,
+        size: currentTransform.size,
         setSize,
-        color,
+        color: currentTransform.color,
         setColor,
         emojiType,
         setEmojiType,
@@ -143,6 +210,7 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         setSelectedStickerPart,
         selectedStickerModels,
         setSelectedStickerModel,
+        getTransform,
         // Legacy props for backward compatibility
         selectedHeadModel: selectedEmojiModels.head || 'default',
         setSelectedHeadModel

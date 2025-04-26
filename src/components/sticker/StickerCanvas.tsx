@@ -3,44 +3,46 @@ import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 import { findStickerModel } from '../../data/sticker/stickerModels';
 
 /**
- * Canvas component specifically for rendering sticker characters
- * Can layer multiple SVG components (face, eyes, hair, etc.)
+ * Canvas component for rendering sticker characters
+ * Uses separate transform properties for each part
  */
 function StickerCanvas() {
   const { 
-    position, 
-    rotation, 
-    size, 
-    color, 
+    getTransform,
     selectedStickerModels
   } = useEmojiCustomization();
 
   const canvasSize = 600;
-  const scaleX = size.x / 100;
-  const scaleY = size.y / 100;
   
-  const containerStyle = {
-    position: 'absolute' as const,
-    left: `${position.x}px`,
-    top: `${position.y}px`,
-    transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`,
-    transformOrigin: 'center center',
-    width: '100px',
-    height: '100px'
-  };
-
-  // Retrieve selected models for sticker mode
+  // Retrieve selected models
   const faceModel = findStickerModel('face', selectedStickerModels.face || 'shape01');
   const eyesModel = findStickerModel('eyes', selectedStickerModels.eyes || null);
   const hairModel = findStickerModel('hair', selectedStickerModels.hair || null);
-  // We can add more part types in the future
+  
+  // Helper function to create style based on transform
+  const createStyle = (part: string) => {
+    const transform = getTransform('sticker', part);
+    const { position, rotation, size } = transform;
+    const scaleX = size.x / 100;
+    const scaleY = size.y / 100;
+    
+    return {
+      position: 'absolute' as const,
+      left: `${position.x}px`,
+      top: `${position.y}px`,
+      transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`,
+      transformOrigin: 'center center',
+      width: '100px',
+      height: '100px'
+    };
+  };
   
   return (
     <div
       className="bg-gray-700 rounded-lg shadow-xl overflow-hidden relative"
       style={{ width: `${canvasSize}px`, height: `${canvasSize}px` }}
     >
-      {/* Canvas background - slightly darker for sticker mode */}
+      {/* Canvas background */}
       <div style={{ 
         position: 'absolute', 
         width: '100%', 
@@ -48,24 +50,24 @@ function StickerCanvas() {
         backgroundColor: '#444'
       }}></div>
 
-      {/* Render all selected sticker parts */}
+      {/* Render all selected sticker parts with their individual transforms */}
       {faceModel && (
         <faceModel.SvgComponent
-          style={containerStyle}
-          fill={color}
+          style={createStyle('face')}
+          fill={getTransform('sticker', 'face').color}
         />
       )}
       
       {eyesModel && (
         <eyesModel.SvgComponent
-          style={{...containerStyle, zIndex: 2}}
+          style={{...createStyle('eyes'), zIndex: 2}}
           fill="#333333"
         />
       )}
       
       {hairModel && (
         <hairModel.SvgComponent
-          style={{...containerStyle, zIndex: 3}}
+          style={{...createStyle('hair'), zIndex: 3}}
           fill="#663300"
         />
       )}

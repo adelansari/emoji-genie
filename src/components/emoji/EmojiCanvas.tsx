@@ -3,34 +3,39 @@ import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 import { findEmojiModel } from '../../data/emoji/emojiModels';
 
 /**
- * Canvas component specifically for rendering emoji models
- * Uses SVG components for rendering the selected emoji parts
+ * Canvas component for rendering emoji models
  */
 function EmojiCanvas() {
   const { 
-    position, 
-    rotation, 
-    size, 
-    color, 
+    getTransform,
     selectedEmojiModels
   } = useEmojiCustomization();
 
   const canvasSize = 600;
-  const scaleX = size.x / 100;
-  const scaleY = size.y / 100;
   
-  const containerStyle = {
-    position: 'absolute' as const,
-    left: `${position.x}px`,
-    top: `${position.y}px`,
-    transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`,
-    transformOrigin: 'center center',
-    width: '100px',
-    height: '100px'
-  };
-
+  // For emoji mode, use the head model
   const headModel = findEmojiModel('head', selectedEmojiModels.head || 'default');
-  // In the future, we could render other parts like hats, eyes, mouth, etc.
+  
+  // Get transform for head
+  const headTransform = getTransform('emoji', 'head');
+  
+  // Helper function to create style based on transform
+  const createStyle = (part: string) => {
+    const transform = getTransform('emoji', part);
+    const { position, rotation, size } = transform;
+    const scaleX = size.x / 100;
+    const scaleY = size.y / 100;
+    
+    return {
+      position: 'absolute' as const,
+      left: `${position.x}px`,
+      top: `${position.y}px`,
+      transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`,
+      transformOrigin: 'center center',
+      width: '100px',
+      height: '100px'
+    };
+  };
   
   return (
     <div
@@ -47,8 +52,8 @@ function EmojiCanvas() {
 
       {headModel ? (
         <headModel.SvgComponent
-          style={containerStyle}
-          fill={headModel.id === 'default' ? undefined : color}
+          style={createStyle('head')}
+          fill={headModel.id === 'default' ? undefined : headTransform.color}
         />
       ) : (
         <p style={{ color: 'white', textAlign: 'center', paddingTop: '50px' }}>
