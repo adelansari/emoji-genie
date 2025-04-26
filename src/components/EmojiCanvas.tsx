@@ -1,4 +1,5 @@
 import { headModels, HeadShapeType } from "../data/headModels";
+import { memo } from 'react';
 
 type EmojiCanvasProps = {
   position: {
@@ -14,7 +15,7 @@ type EmojiCanvasProps = {
   color: string;
 };
 
-export default function EmojiCanvas(props: EmojiCanvasProps) {
+function EmojiCanvas(props: EmojiCanvasProps) {
   const canvasSize = 600;
   const modelData = headModels.find(m => m.id === props.headShape);
   const SvgComponent = modelData?.SvgComponent;
@@ -53,3 +54,5 @@ export default function EmojiCanvas(props: EmojiCanvasProps) {
     </div>
   );
 }
+
+export default memo(EmojiCanvas);
