@@ -10,7 +10,12 @@ export default function ModelGallery({ selectedPart, onSelectModel, currentHeadM
 
   const renderHeadModels = () => {
     return headModels.map((model: HeadModel) => {
-      if (!model.svgPath) return null;
+      if (!model.SvgComponent) return null;
+
+      // Determine fill color: use internal for default, otherwise based on selection
+      const fillColor = model.id === 'default'
+        ? undefined // Let internal SVG style apply for default
+        : currentHeadModel === model.id ? '#FACC15' : '#D1D5DB';
 
       return (
         <button
@@ -22,14 +27,11 @@ export default function ModelGallery({ selectedPart, onSelectModel, currentHeadM
             }`}
           title={model.name}
         >
-          <svg
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            width="24"
-            height="24"
-          >
-            <path d={model.svgPath} />
-          </svg>
+          <model.SvgComponent
+            width="32"
+            height="32"
+            fill={fillColor} // Apply conditional fill
+          />
         </button>
       );
     });

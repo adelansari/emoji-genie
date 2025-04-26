@@ -80,21 +80,36 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
         />
       </div>
       <div className="grid grid-cols-4 gap-2">
-        {editModes.map((editMode) => (
-          <button
-            key={editMode}
-            onClick={() => setMode(current => current === editMode ? "none" : editMode)}
-            className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize ${mode === editMode
-              ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
-              : "bg-gray-700/60 hover:bg-gray-600/80"
-              }`}
-          >
-            {editMode}
-          </button>
-        ))}
+        {editModes.map((editMode) => {
+          const isColorButton = editMode === 'color';
+          const isHeadSelected = selectedPart === 'Head';
+          const isDisabled = isColorButton && isHeadSelected;
+
+          return (
+            <button
+              key={editMode}
+              onClick={() => setMode(current => current === editMode ? "none" : editMode)}
+              disabled={isDisabled} // Disable color button if Head is selected
+              className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize 
+                ${mode === editMode && !isDisabled
+                  ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
+                  : isDisabled
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : "bg-gray-700/60 hover:bg-gray-600/80"
+                }`}
+            >
+              {editMode}
+            </button>
+          );
+        })}
       </div>
       <div className="min-h-[200px]">
-        {renderEditControl()}
+        {/* Render control only if not disabled */}
+        {!(mode === 'color' && selectedPart === 'Head') && renderEditControl()}
+        {/* Optionally show a message when color is disabled for Head */}
+        {mode === 'color' && selectedPart === 'Head' && (
+          <p className="text-center text-gray-400 pt-4">Color customization is disabled for the base head shape.</p>
+        )}
       </div>
     </div>
   );

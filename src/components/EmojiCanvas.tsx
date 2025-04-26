@@ -1,5 +1,4 @@
-import { Layer, Rect, Stage, Path } from "react-konva";
-import { HeadShapeType, headModels } from "../data/headModels";
+import { headModels, HeadShapeType } from "../data/headModels";
 
 type EmojiCanvasProps = {
   position: {
@@ -17,51 +16,40 @@ type EmojiCanvasProps = {
 
 export default function EmojiCanvas(props: EmojiCanvasProps) {
   const canvasSize = 600;
+  const modelData = headModels.find(m => m.id === props.headShape);
+  const SvgComponent = modelData?.SvgComponent;
+
   const scaleX = props.size.x / 100;
   const scaleY = props.size.y / 100;
-
-  const renderHeadShape = () => {
-    const modelData = headModels.find(m => m.id === props.headShape);
-
-    const commonProps = {
-      x: props.position.x,
-      y: props.position.y,
-      fill: props.color,
-      rotation: props.rotation,
-      shadowBlur: 10,
-      shadowColor: "black",
-      scaleX: scaleX,
-      scaleY: scaleY,
-      offsetX: 0,
-      offsetY: 0,
-    };
-
-    if (modelData?.konvaData) {
-      return <Path {...commonProps} data={modelData.konvaData} />;
-    } else {
-      console.warn(`Konva data not found for head shape: ${props.headShape}. Rendering default circle.`);
-      const defaultModel = headModels.find(m => m.id === 'circle');
-      if (defaultModel?.konvaData) {
-        return <Path {...commonProps} data={defaultModel.konvaData} />;
-      }
-      return null;
-    }
+  const containerStyle = {
+    position: 'absolute' as const,
+    left: `${props.position.x}px`,
+    top: `${props.position.y}px`,
+    transform: `translate(-50%, -50%) rotate(${props.rotation}deg) scale(${scaleX}, ${scaleY})`,
+    transformOrigin: 'center center',
+    width: '100px',
+    height: '100px'
   };
 
   return (
-    <div className="bg-gray-700 rounded-lg shadow-xl overflow-hidden">
-      <Stage width={canvasSize} height={canvasSize}>
-        <Layer>
-          <Rect
-            x={0}
-            y={0}
-            width={canvasSize}
-            height={canvasSize}
-            fill="#555"
-          />
-          {renderHeadShape()}
-        </Layer >
-      </Stage >
-    </div >
+    <div
+      className="bg-gray-700 rounded-lg shadow-xl overflow-hidden relative"
+      style={{ width: `${canvasSize}px`, height: `${canvasSize}px` }}
+    >
+      <div style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: '#555' }}></div>
+
+      {SvgComponent && (
+        <SvgComponent
+          style={containerStyle}
+          // Conditionally pass fill: only if not the default model
+          fill={props.headShape === 'default' ? undefined : props.color}
+        />
+      )}
+      {!SvgComponent && (
+        <p style={{ color: 'white', textAlign: 'center', paddingTop: '50px' }}>
+          Head model not found: {props.headShape}
+        </p>
+      )}
+    </div>
   );
 }
