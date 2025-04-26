@@ -10,10 +10,10 @@ function App() {
   });
   const [rotation, setRotation] = useState(0);
   const [size, setSize] = useState({
-    x: 100,
-    y: 100,
+    x: 200,
+    y: 200,
   });
-  const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("square");
+  const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("default");
   const [color, setColor] = useState("#FFFFFF");
 
   return (
