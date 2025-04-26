@@ -1,6 +1,5 @@
-import EmojiCanvas from "./components/EmojiCanvas";
-import CustomizationMenu from "./components/CustomizationMenu";
 import TypeToggleSwitch from "./components/TypeToggleSwitch";
+import { CustomizationMenuSwitcher, CanvasSwitcher } from "./components/ModeSwitcher";
 import { EmojiCustomizationProvider } from "./context/EmojiCustomizationContext";
 
 function App() {
@@ -15,10 +14,10 @@ function App() {
         </div>
         <div className="w-full max-w-6xl flex flex-col md:flex-row justify-center items-start gap-8">
           <div className="flex-shrink-0">
-            <EmojiCanvas />
+            <CanvasSwitcher />
           </div>
           <div className="flex-shrink-0">
-            <CustomizationMenu />
+            <CustomizationMenuSwitcher />
           </div>
         </div>
       </div>
