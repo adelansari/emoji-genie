@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, memo } from "react";
 import { Circle, Layer, Stage } from "react-konva";
 import Konva from "konva";
 
@@ -10,7 +10,7 @@ type JoystickControllerProps = {
   };
 };
 
-export default function JoystickController(props: JoystickControllerProps) {
+function JoystickController(props: JoystickControllerProps) {
   const containerSize = 200;
   const center = { x: containerSize / 2, y: containerSize / 2 };
   const controlRadius = 80;
@@ -25,7 +25,7 @@ export default function JoystickController(props: JoystickControllerProps) {
   const [isDragging, setIsDragging] = useState(false);
   const stageRef = useRef<Konva.Stage>(null);
 
-  const updateControlledPosition = (indicatorX: number, indicatorY: number) => {
+  const updateControlledPosition = useCallback((indicatorX: number, indicatorY: number) => {
     const dx = indicatorX - center.x;
     const dy = indicatorY - center.y;
 
@@ -39,46 +39,32 @@ export default function JoystickController(props: JoystickControllerProps) {
     const clampedY = Math.max(elementSize / 2, Math.min(canvasSize - elementSize / 2, targetY));
 
     props.setPosition({ x: clampedX, y: clampedY });
-  };
+  }, [props.setPosition, center.x, center.y, controlRadius, canvasSize, elementSize]);
 
-  const handlePointerInteraction = () => {
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const pointerPosition = stage.getPointerPosition();
-    if (!pointerPosition) return;
-
-    const dx = pointerPosition.x - center.x;
-    const dy = pointerPosition.y - center.y;
-    let distance = Math.sqrt(dx * dx + dy * dy);
-
-    let newX = pointerPosition.x;
-    let newY = pointerPosition.y;
-
-    if (distance > controlRadius) {
-      const ratio = controlRadius / distance;
-      newX = center.x + dx * ratio;
-      newY = center.y + dy * ratio;
-      distance = controlRadius;
-    }
-
-    setIndicatorPosition({ x: newX, y: newY });
-    updateControlledPosition(newX, newY);
-  };
-
-  const handleMouseDown = () => {
+  const handleDragMove = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
+    const node = e.target;
+    const pos = node.position();
+    updateControlledPosition(pos.x, pos.y);
     setIsDragging(true);
-    handlePointerInteraction();
-  };
+  }, [updateControlledPosition]);
 
-  const handleMouseMove = () => {
-    if (!isDragging) return;
-    handlePointerInteraction();
-  };
-
-  const handleMouseUp = () => {
+  const handleDragEnd = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
+
+  const dragBoundFunc = useCallback((pos: { x: number; y: number }) => {
+    const dx = pos.x - center.x;
+    const dy = pos.y - center.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance <= controlRadius) {
+      return pos;
+    }
+    const ratio = controlRadius / distance;
+    return {
+      x: center.x + dx * ratio,
+      y: center.y + dy * ratio,
+    };
+  }, [center.x, center.y, controlRadius]);
 
   return (
     <div className="bg-gray-700/50 rounded-lg shadow-xl p-2 flex flex-col items-center">
@@ -87,12 +73,6 @@ export default function JoystickController(props: JoystickControllerProps) {
         height={containerSize}
         className="bg-gray-600 rounded-full cursor-pointer"
         ref={stageRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onTouchStart={handleMouseDown}
-        onTouchMove={handleMouseMove}
-        onTouchEnd={handleMouseUp}
       >
         <Layer>
           <Circle
@@ -114,10 +94,16 @@ export default function JoystickController(props: JoystickControllerProps) {
             shadowColor="black"
             shadowBlur={5}
             shadowOpacity={0.5}
-            listening={false}
+            draggable
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            dragBoundFunc={dragBoundFunc}
+            onDragStart={() => setIsDragging(true)}
           />
         </Layer>
       </Stage>
     </div>
   );
 }
+
+export default memo(JoystickController);
