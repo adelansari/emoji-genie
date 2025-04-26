@@ -88,8 +88,8 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     const [color, _setColor] = useState("#FFFFFF"); // head color
     const [selectedLeftEyeModel, _setSelectedLeftEyeModel] = useState<EyeShapeType>("eye1");
     const [selectedRightEyeModel, _setSelectedRightEyeModel] = useState<EyeShapeType>("eye1");
-    const [leftEyeColor, _setLeftEyeColor] = useState("#FFFFFF");
-    const [rightEyeColor, _setRightEyeColor] = useState("#FFFFFF");
+    const [leftEyeColor, _setLeftEyeColor] = useState("#896024");
+    const [rightEyeColor, _setRightEyeColor] = useState("#896024");
     const [selectedMouthModel, _setSelectedMouthModel] = useState<MouthShapeType>("mouth1");
     const [mouthColor, _setMouthColor] = useState("#FFFFFF");
 
@@ -185,7 +185,7 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         sizeHead,
         setSizeHead,
         selectedHeadModel,
-        setSelectedHeadModel, // Add missing setter
+        setSelectedHeadModel,
         color,
         setColor,
         positionLeftEye,

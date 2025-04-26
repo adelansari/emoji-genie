@@ -32,3 +32,9 @@ body {
 .chrome-picker-wrapper .chrome-picker > div:nth-child(2) > div:nth-child(2) {
   display: none !important;
 }
+
+/* dynamic fill override for SVG components */
+.custom-fill path:not([fill*="url"]) {
+  /* override non-gradient fills only */
+  fill: var(--fillColor) !important;
+}

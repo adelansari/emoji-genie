@@ -8,7 +8,6 @@ import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
 export default function CustomizationMenu() {
   const {
-    selectedHeadModel,
     positionHead, setPositionHead,
     rotationHead, setRotationHead,
     sizeHead, setSizeHead,
@@ -24,6 +23,7 @@ export default function CustomizationMenu() {
     color, setColor,
     leftEyeColor, setLeftEyeColor,
     rightEyeColor, setRightEyeColor,
+    mouthColor, setMouthColor,
   } = useEmojiCustomization();
 
   type EmojiPart = "Head" | "Left Eye" | "Right Eye" | "Mouth";
@@ -56,12 +56,14 @@ export default function CustomizationMenu() {
         if (selectedPart === "Head") return <ColorPicker color={color} setColor={setColor} />;
         if (selectedPart === "Left Eye") return <ColorPicker color={leftEyeColor} setColor={setLeftEyeColor} />;
         if (selectedPart === "Right Eye") return <ColorPicker color={rightEyeColor} setColor={setRightEyeColor} />;
-        return <p className="text-center text-gray-400 pt-4">Color customization not available for Mouth yet.</p>;
+        if (selectedPart === "Mouth") return <p className="text-center text-gray-400 pt-4">Color customization not available for this part.</p>;
+        return null;
       default: return null;
     }
   };
 
-  const isColorDisabled = mode === 'color' && (selectedPart === 'Mouth' || (selectedPart === 'Head' && selectedHeadModel === 'default'));
+  // Disable color mode button for Mouth only
+  const isColorDisabled = selectedPart === 'Mouth';
 
   return (
     <div className="flex-shrink-0 w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-4 flex flex-col gap-4 text-white">
@@ -87,7 +89,7 @@ export default function CustomizationMenu() {
       <div className="grid grid-cols-4 gap-2">
         {editModes.map(editMode => {
           const isCurrent = mode === editMode;
-          const isDisabled = editMode === 'color' && isColorDisabled;
+          const isDisabled = editMode === 'color' && selectedPart === 'Mouth';
           return (
             <button
               key={editMode}
@@ -104,14 +106,7 @@ export default function CustomizationMenu() {
       </div>
 
       <div className="min-h-[200px]">
-        {!isColorDisabled && renderEditControl()}
-        {isColorDisabled && (
-          <p className="text-center text-gray-400 pt-4">
-            {selectedPart === 'Mouth'
-              ? "Color customization not available for this part."
-              : "Color customization is disabled for the default head shape."}
-          </p>
-        )}
+        {renderEditControl()}
       </div>
     </div>
   );
