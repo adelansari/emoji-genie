@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { memo, useState, useRef, useEffect, useCallback } from "react";
 import { Circle, Layer, Stage, Line } from "react-konva";
 import Konva from "konva";
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
-const RotationJoystickComponent = () => {
-  const { rotation, setRotation } = useEmojiCustomization();
+interface RotationJoystickProps {
+  rotation: number;
+  setRotation: (rot: number) => void;
+}
 
+const RotationJoystickComponent = ({ rotation, setRotation }: RotationJoystickProps) => {
   const containerSize = 200;
   const center = { x: containerSize / 2, y: containerSize / 2 };
   const trackRadius = 80;

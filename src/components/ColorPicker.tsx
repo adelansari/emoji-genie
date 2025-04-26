@@ -1,10 +1,12 @@
 import { ColorResult, ChromePicker, TwitterPicker } from 'react-color';
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext"; // Import the hook
 import { useCallback, memo } from 'react';
+// Props for controlled color picker
+interface ColorPickerProps {
+  color: string;
+  setColor: (color: string) => void;
+}
 
-function ColorPickerComponent() {
-  const { color, setColor } = useEmojiCustomization();
-
+function ColorPickerComponent({ color, setColor }: ColorPickerProps) {
   const handleChangeComplete = useCallback((colorResult: ColorResult) => {
     setColor(colorResult.hex);
   }, [setColor]);

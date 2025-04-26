@@ -1,11 +1,12 @@
-import { useState, useRef, useCallback, memo } from "react";
+import { memo, useState, useRef, useCallback } from "react";
 import { Circle, Layer, Stage } from "react-konva";
 import Konva from "konva";
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
-function JoystickController() {
-  const { position, setPosition } = useEmojiCustomization();
-
+interface JoystickControllerProps {
+  position: { x: number; y: number };
+  setPosition: (pos: { x: number; y: number }) => void;
+}
+function JoystickController({ position, setPosition }: JoystickControllerProps) {
   const containerSize = 200;
   const center = { x: containerSize / 2, y: containerSize / 2 };
   const controlRadius = 80;

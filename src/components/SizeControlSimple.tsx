@@ -1,9 +1,13 @@
-import { useState, useEffect, useCallback, memo } from "react";
+import { memo, useState, useEffect, useCallback } from "react";
 import { Lock, Unlock, RotateCcw } from 'lucide-react';
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
-const SizeControlSimpleComponent = ({ minSize = 1, maxSize = 500 }) => {
-    const { size, setSize } = useEmojiCustomization();
+interface SizeControlSimpleProps {
+    size: { x: number; y: number };
+    setSize: (size: { x: number; y: number }) => void;
+    minSize?: number;
+    maxSize?: number;
+}
+const SizeControlSimpleComponent = ({ size, setSize, minSize = 1, maxSize = 500 }: SizeControlSimpleProps) => {
     const sizeX = size.x;
     const sizeY = size.y;
 
@@ -44,7 +48,7 @@ const SizeControlSimpleComponent = ({ minSize = 1, maxSize = 500 }) => {
         } else {
             setSize({ x: sizeX, y: newY });
         }
-    }, [isLocked, aspectRatio, sizeX, minSize, maxSize, setSize]);
+    }, [isLocked, aspectRatio, sizeX, sizeY, minSize, maxSize, setSize]);
 
     const toggleLock = useCallback(() => {
         const nextLockedState = !isLocked;
