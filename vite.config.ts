@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     svgr({
       svgrOptions: {
-        svgo: false,
+        svgo: true,
         // Ensure fill attributes are not removed
         plugins: ['@svgr/plugin-svgo', '@svgr/plugin-jsx'],
         // Prevent replacing attributes with currentColor
