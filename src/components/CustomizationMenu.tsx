@@ -5,6 +5,7 @@ import SizeControlSimple from "./SizeControlSimple";
 import RotationJoystick from "./RotationJoystick";
 import ColorPicker from "./ColorPicker";
 import { HeadShapeType } from "../data/headModels";
+import { EyeShapeType } from "../data/eyeModels";
 
 type CustomizationMenuProps = {
   setPosition: (position: { x: number; y: number }) => void;
@@ -15,13 +16,21 @@ type CustomizationMenuProps = {
   size: { x: number; y: number };
   selectedHeadModel: HeadShapeType;
   onSelectHeadModel: (modelId: HeadShapeType) => void;
-  color: string;
-  setColor: (color: string) => void;
+  selectedLeftEyeModel: EyeShapeType;
+  onSelectLeftEyeModel: (modelId: EyeShapeType) => void;
+  selectedRightEyeModel: EyeShapeType;
+  onSelectRightEyeModel: (modelId: EyeShapeType) => void;
+  headColor: string;
+  setHeadColor: (color: string) => void;
+  leftEyeColor: string;
+  setLeftEyeColor: (color: string) => void;
+  rightEyeColor: string;
+  setRightEyeColor: (color: string) => void;
 };
 
 
-type EmojiPart = "Head" | "Hat" | "Eyes" | "Mouth";
-const emojiParts: EmojiPart[] = ["Head", "Hat", "Eyes", "Mouth"];
+type EmojiPart = "Head" | "Left Eye" | "Right Eye" | "Mouth";
+const emojiParts: EmojiPart[] = ["Head", "Left Eye", "Right Eye", "Mouth"];
 
 type EditMode = "none" | "position" | "size" | "rotation" | "color";
 const editModes: EditMode[] = ["position", "size", "rotation", "color"];
@@ -30,9 +39,13 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
   const [selectedPart, setSelectedPart] = useState<EmojiPart>("Head");
   const [mode, setMode] = useState<EditMode>("none");
 
-  const handleSelectModel = (part: EmojiPart, modelId: HeadShapeType) => {
+  const handleSelectModel = (part: EmojiPart, modelId: string) => {
     if (part === "Head") {
-      props.onSelectHeadModel(modelId);
+      props.onSelectHeadModel(modelId as HeadShapeType);
+    } else if (part === "Left Eye") {
+      props.onSelectLeftEyeModel(modelId as EyeShapeType);
+    } else if (part === "Right Eye") {
+      props.onSelectRightEyeModel(modelId as EyeShapeType);
     }
   };
 
@@ -45,11 +58,28 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
       case "rotation":
         return <RotationJoystick value={props.rotation} onChange={props.setRotation} />;
       case "color":
-        return <ColorPicker value={props.color} onChange={props.setColor} />;
+        switch (selectedPart) {
+          case "Head":
+            return <ColorPicker value={props.headColor} onChange={props.setHeadColor} />;
+          case "Left Eye":
+            return <ColorPicker value={props.leftEyeColor} onChange={props.setLeftEyeColor} />;
+          case "Right Eye":
+            return <ColorPicker value={props.rightEyeColor} onChange={props.setRightEyeColor} />;
+          case "Mouth":
+          default:
+            return <p className="text-center text-gray-400 pt-4">Color customization not available for Mouth yet.</p>;
+        }
       case "none":
       default:
         return null;
     }
+  };
+
+  const isColorModeDisabled = () => {
+    if (mode !== 'color') return false;
+    if (selectedPart === 'Head' && props.selectedHeadModel === 'default') return true;
+    if (selectedPart === 'Mouth') return true;
+    return false;
   };
 
   return (
@@ -77,38 +107,48 @@ export default function CustomizationMenu(props: CustomizationMenuProps) {
           selectedPart={selectedPart}
           onSelectModel={handleSelectModel}
           currentHeadModel={props.selectedHeadModel}
+          currentLeftEyeModel={props.selectedLeftEyeModel}
+          currentRightEyeModel={props.selectedRightEyeModel}
         />
       </div>
       <div className="grid grid-cols-4 gap-2">
         {editModes.map((editMode) => {
-          const isColorButton = editMode === 'color';
-          const isHeadSelected = selectedPart === 'Head';
-          const isDisabled = isColorButton && isHeadSelected;
+          const isCurrentMode = mode === editMode;
+          let isDisabled = false;
+          const buttonText = editMode;
+
+          if (editMode === 'color') {
+            if (selectedPart === 'Head' && props.selectedHeadModel === 'default') {
+              isDisabled = true;
+            } else if (selectedPart === 'Mouth') {
+              isDisabled = true;
+            }
+          }
 
           return (
             <button
               key={editMode}
               onClick={() => setMode(current => current === editMode ? "none" : editMode)}
-              disabled={isDisabled} // Disable color button if Head is selected
+              disabled={isDisabled}
               className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize 
-                ${mode === editMode && !isDisabled
+                ${isCurrentMode && !isDisabled
                   ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
                   : isDisabled
                     ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                     : "bg-gray-700/60 hover:bg-gray-600/80"
                 }`}
             >
-              {editMode}
+              {buttonText}
             </button>
           );
         })}
       </div>
       <div className="min-h-[200px]">
-        {/* Render control only if not disabled */}
-        {!(mode === 'color' && selectedPart === 'Head') && renderEditControl()}
-        {/* Optionally show a message when color is disabled for Head */}
-        {mode === 'color' && selectedPart === 'Head' && (
-          <p className="text-center text-gray-400 pt-4">Color customization is disabled for the base head shape.</p>
+        {!isColorModeDisabled() && renderEditControl()}
+        {isColorModeDisabled() && (
+          <p className="text-center text-gray-400 pt-4">
+            {selectedPart === 'Head' ? "Color customization is disabled for the default head shape." : "Color customization not available for this part."}
+          </p>
         )}
       </div>
     </div>

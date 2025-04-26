@@ -2,6 +2,7 @@ import { useState } from "react";
 import EmojiCanvas from "./components/EmojiCanvas";
 import CustomizationMenu from "./components/CustomizationMenu";
 import { HeadShapeType } from "./data/headModels";
+import { EyeShapeType } from "./data/eyeModels";
 
 function App() {
   const [position, setPosition] = useState({
@@ -14,7 +15,12 @@ function App() {
     y: 200,
   });
   const [selectedHeadModel, setSelectedHeadModel] = useState<HeadShapeType>("default");
-  const [color, setColor] = useState("#FFFFFF");
+  const [selectedLeftEyeModel, setSelectedLeftEyeModel] = useState<EyeShapeType>("eye1");
+  const [selectedRightEyeModel, setSelectedRightEyeModel] = useState<EyeShapeType>("eye1");
+  const [headColor, setHeadColor] = useState("#facc15");
+  const [leftEyeColor, setLeftEyeColor] = useState("#FFFFFF");
+  const [rightEyeColor, setRightEyeColor] = useState("#FFFFFF");
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-800">
@@ -28,7 +34,11 @@ function App() {
             rotation={rotation}
             size={size}
             headShape={selectedHeadModel}
-            color={color}
+            leftEyeShape={selectedLeftEyeModel}
+            rightEyeShape={selectedRightEyeModel}
+            headColor={headColor}
+            leftEyeColor={leftEyeColor}
+            rightEyeColor={rightEyeColor}
           />
         </div>
         <div className="flex-shrink-0">
@@ -41,8 +51,16 @@ function App() {
             setSize={setSize}
             selectedHeadModel={selectedHeadModel}
             onSelectHeadModel={setSelectedHeadModel}
-            color={color}
-            setColor={setColor}
+            selectedLeftEyeModel={selectedLeftEyeModel}
+            onSelectLeftEyeModel={setSelectedLeftEyeModel}
+            selectedRightEyeModel={selectedRightEyeModel}
+            onSelectRightEyeModel={setSelectedRightEyeModel}
+            headColor={headColor}
+            setHeadColor={setHeadColor}
+            leftEyeColor={leftEyeColor}
+            setLeftEyeColor={setLeftEyeColor}
+            rightEyeColor={rightEyeColor}
+            setRightEyeColor={setRightEyeColor}
           />
         </div>
       </div>
