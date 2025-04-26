@@ -7,7 +7,24 @@ import ColorPicker from "./ColorPicker";
 import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
 export default function CustomizationMenu() {
-  const { selectedHeadModel } = useEmojiCustomization();
+  const {
+    selectedHeadModel,
+    positionHead, setPositionHead,
+    rotationHead, setRotationHead,
+    sizeHead, setSizeHead,
+    positionLeftEye, setPositionLeftEye,
+    rotationLeftEye, setRotationLeftEye,
+    sizeLeftEye, setSizeLeftEye,
+    positionRightEye, setPositionRightEye,
+    rotationRightEye, setRotationRightEye,
+    sizeRightEye, setSizeRightEye,
+    positionMouth, setPositionMouth,
+    rotationMouth, setRotationMouth,
+    sizeMouth, setSizeMouth,
+    color, setColor,
+    leftEyeColor, setLeftEyeColor,
+    rightEyeColor, setRightEyeColor,
+  } = useEmojiCustomization();
 
   type EmojiPart = "Head" | "Left Eye" | "Right Eye" | "Mouth";
   const emojiParts: EmojiPart[] = ["Head", "Left Eye", "Right Eye", "Mouth"];
@@ -20,13 +37,25 @@ export default function CustomizationMenu() {
 
   const renderEditControl = () => {
     switch (mode) {
-      case "position": return <JoystickController />;
-      case "size": return <SizeControlSimple />;
-      case "rotation": return <RotationJoystick />;
+      case "position":
+        if (selectedPart === "Head") return <JoystickController position={positionHead} setPosition={setPositionHead} />;
+        if (selectedPart === "Left Eye") return <JoystickController position={positionLeftEye} setPosition={setPositionLeftEye} />;
+        if (selectedPart === "Right Eye") return <JoystickController position={positionRightEye} setPosition={setPositionRightEye} />;
+        return <JoystickController position={positionMouth} setPosition={setPositionMouth} />;
+      case "size":
+        if (selectedPart === "Head") return <SizeControlSimple size={sizeHead} setSize={setSizeHead} />;
+        if (selectedPart === "Left Eye") return <SizeControlSimple size={sizeLeftEye} setSize={setSizeLeftEye} />;
+        if (selectedPart === "Right Eye") return <SizeControlSimple size={sizeRightEye} setSize={setSizeRightEye} />;
+        return <SizeControlSimple size={sizeMouth} setSize={setSizeMouth} />;
+      case "rotation":
+        if (selectedPart === "Head") return <RotationJoystick rotation={rotationHead} setRotation={setRotationHead} />;
+        if (selectedPart === "Left Eye") return <RotationJoystick rotation={rotationLeftEye} setRotation={setRotationLeftEye} />;
+        if (selectedPart === "Right Eye") return <RotationJoystick rotation={rotationRightEye} setRotation={setRotationRightEye} />;
+        return <RotationJoystick rotation={rotationMouth} setRotation={setRotationMouth} />;
       case "color":
-        if (selectedPart === "Head") return <ColorPicker />;
-        if (selectedPart === "Left Eye") return <ColorPicker />;
-        if (selectedPart === "Right Eye") return <ColorPicker />;
+        if (selectedPart === "Head") return <ColorPicker color={color} setColor={setColor} />;
+        if (selectedPart === "Left Eye") return <ColorPicker color={leftEyeColor} setColor={setLeftEyeColor} />;
+        if (selectedPart === "Right Eye") return <ColorPicker color={rightEyeColor} setColor={setRightEyeColor} />;
         return <p className="text-center text-gray-400 pt-4">Color customization not available for Mouth yet.</p>;
       default: return null;
     }

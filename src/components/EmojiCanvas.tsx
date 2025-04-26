@@ -6,17 +6,11 @@ import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
 function EmojiCanvas() {
   const {
-    position,
-    rotation,
-    size,
-    selectedHeadModel,
-    selectedLeftEyeModel,
-    selectedRightEyeModel,
-    color: headColor,
-    leftEyeColor,
-    rightEyeColor,
-    selectedMouthModel,
-    mouthColor,
+    positionHead, rotationHead, sizeHead,
+    selectedHeadModel, color: headColor,
+    positionLeftEye, rotationLeftEye, sizeLeftEye, selectedLeftEyeModel, leftEyeColor,
+    positionRightEye, rotationRightEye, sizeRightEye, selectedRightEyeModel, rightEyeColor,
+    positionMouth, rotationMouth, sizeMouth, selectedMouthModel, mouthColor,
   } = useEmojiCustomization();
 
   const canvasSize = 600;
@@ -30,50 +24,45 @@ function EmojiCanvas() {
   const mouthModelData = mouthModels.find(m => m.id === selectedMouthModel);
   const MouthSvgComponent = mouthModelData?.SvgComponent;
 
-  const headScaleX = size.x / 100;
-  const headScaleY = size.y / 100;
+  const headScaleX = sizeHead.x / 100;
+  const headScaleY = sizeHead.y / 100;
   const headContainerStyle = {
     position: 'absolute' as const,
-    left: `${position.x}px`,
-    top: `${position.y}px`,
-    transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${headScaleX}, ${headScaleY})`,
+    left: `${positionHead.x}px`,
+    top: `${positionHead.y}px`,
+    transform: `translate(-50%, -50%) rotate(${rotationHead}deg) scale(${headScaleX}, ${headScaleY})`,
     transformOrigin: 'center center',
     width: '100px',
     height: '100px',
   };
 
-  const eyeBaseSize = 20;
-  const eyeScale = 1;
-  const eyeOffsetX = 19;
-  const eyeOffsetY = -12;
-
   const leftEyeStyle = {
     position: 'absolute' as const,
-    left: `${position.x - eyeOffsetX * headScaleX}px`,
-    top: `${position.y + eyeOffsetY * headScaleY}px`,
-    width: `${eyeBaseSize * headScaleX * eyeScale}px`,
-    height: `${eyeBaseSize * headScaleY * eyeScale}px`,
-    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+    left: `${positionLeftEye.x}px`,
+    top: `${positionLeftEye.y}px`,
+    width: `${sizeLeftEye.x}px`,
+    height: `${sizeLeftEye.y}px`,
+    transform: `translate(-50%, -50%) rotate(${rotationLeftEye}deg)`,
     transformOrigin: 'center center',
     fill: leftEyeColor,
   };
-
   const rightEyeStyle = {
-    ...leftEyeStyle,
-    left: `${position.x + eyeOffsetX * headScaleX}px`,
+    position: 'absolute' as const,
+    left: `${positionRightEye.x}px`,
+    top: `${positionRightEye.y}px`,
+    width: `${sizeRightEye.x}px`,
+    height: `${sizeRightEye.y}px`,
+    transform: `translate(-50%, -50%) rotate(${rotationRightEye}deg)`,
+    transformOrigin: 'center center',
     fill: rightEyeColor,
   };
-  const mouthBaseWidth = 100;
-  const mouthBaseHeight = 30;
-  const mouthOffsetX = 0;
-  const mouthOffsetY = 22;
   const mouthStyle = {
     position: 'absolute' as const,
-    left: `${position.x + mouthOffsetX * headScaleX}px`,
-    top: `${position.y + mouthOffsetY * headScaleY}px`,
-    width: `${mouthBaseWidth * headScaleX}px`,
-    height: `${mouthBaseHeight * headScaleY}px`,
-    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+    left: `${positionMouth.x}px`,
+    top: `${positionMouth.y}px`,
+    width: `${sizeMouth.x}px`,
+    height: `${sizeMouth.y}px`,
+    transform: `translate(-50%, -50%) rotate(${rotationMouth}deg)`,
     transformOrigin: 'center center',
     fill: mouthColor,
   };
@@ -93,20 +82,14 @@ function EmojiCanvas() {
       )}
 
       {LeftEyeSvgComponent && (
-        <LeftEyeSvgComponent
-          style={leftEyeStyle}
-        />
+        <LeftEyeSvgComponent style={leftEyeStyle} />
       )}
 
       {RightEyeSvgComponent && (
-        <RightEyeSvgComponent
-          style={rightEyeStyle}
-        />
+        <RightEyeSvgComponent style={rightEyeStyle} />
       )}
       {MouthSvgComponent && (
-        <MouthSvgComponent
-          style={mouthStyle}
-        />
+        <MouthSvgComponent style={mouthStyle} />
       )}
 
       {!HeadSvgComponent && (
