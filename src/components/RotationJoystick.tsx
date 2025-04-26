@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { Circle, Layer, Stage, Line } from "react-konva";
 import Konva from "konva";
 
@@ -7,7 +7,7 @@ type RotationJoystickProps = {
   onChange: (value: number) => void;
 };
 
-const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
+const RotationJoystickComponent = ({ value, onChange }: RotationJoystickProps) => {
   const containerSize = 200;
   const center = { x: containerSize / 2, y: containerSize / 2 };
   const trackRadius = 80;
@@ -28,48 +28,47 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
   const [handlePosition, setHandlePosition] = useState(calculateHandlePosition(value));
 
   useEffect(() => {
-    setHandlePosition(calculateHandlePosition(value));
-  }, [value, calculateHandlePosition]);
+    // Only update handle position based on external value if NOT dragging
+    if (!isDragging) {
+      setHandlePosition(calculateHandlePosition(value));
+    }
+  }, [value, calculateHandlePosition, isDragging]);
 
-  const updateRotationFromPointer = () => {
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const pointerPosition = stage.getPointerPosition();
-    if (!pointerPosition) return;
-
-    const dx = pointerPosition.x - center.x;
-    const dy = pointerPosition.y - center.y;
-
-    // Calculate angle in radians, atan2 gives angle relative to positive x-axis
+  const calculateAngleFromPosition = useCallback((x: number, y: number) => {
+    const dx = x - center.x;
+    const dy = y - center.y;
     const angleRadians = Math.atan2(dy, dx);
-
-    // Convert radians to degrees (0-360), adjusting so 0 degrees is 'up'
     let angleDegrees = (angleRadians * 180) / Math.PI + 90;
     if (angleDegrees < 0) {
       angleDegrees += 360;
     }
+    return Math.round(angleDegrees) % 360;
+  }, [center.x, center.y]);
 
-    const newRotation = Math.round(angleDegrees) % 360;
-
+  const handleDragMove = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
+    const node = e.target;
+    const pos = node.position();
+    const newRotation = calculateAngleFromPosition(pos.x, pos.y);
     onChange(newRotation);
+    // Konva updates position automatically, no need for setHandlePosition here during drag
+    setIsDragging(true); // Keep track for visual feedback
+  }, [onChange, calculateAngleFromPosition]);
 
-    setHandlePosition(calculateHandlePosition(newRotation));
-  };
-
-  const handleInteractionStart = () => {
-    setIsDragging(true);
-    updateRotationFromPointer();
-  };
-
-  const handleInteractionMove = () => {
-    if (!isDragging) return;
-    updateRotationFromPointer();
-  };
-
-  const handleInteractionEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setIsDragging(false);
-  };
+    // Ensure final position matches the value after drag ends
+    setHandlePosition(calculateHandlePosition(value));
+  }, [value, calculateHandlePosition]);
+
+  const dragBoundFunc = useCallback((pos: { x: number; y: number }) => {
+    const dx = pos.x - center.x;
+    const dy = pos.y - center.y;
+    const angleRadians = Math.atan2(dy, dx);
+    return {
+      x: center.x + trackRadius * Math.cos(angleRadians),
+      y: center.y + trackRadius * Math.sin(angleRadians),
+    };
+  }, [center.x, center.y, trackRadius]);
 
   return (
     <div className="p-2 bg-gray-700/50 rounded-lg flex flex-col items-center">
@@ -77,12 +76,6 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
         width={containerSize}
         height={containerSize}
         ref={stageRef}
-        onMouseDown={handleInteractionStart}
-        onMouseMove={handleInteractionMove}
-        onMouseUp={handleInteractionEnd}
-        onTouchStart={handleInteractionStart}
-        onTouchMove={handleInteractionMove}
-        onTouchEnd={handleInteractionEnd}
         className="cursor-pointer"
       >
         <Layer>
@@ -101,7 +94,6 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
             fill="#718096"
             listening={false}
           />
-          {/* Line from center to handle */}
           <Line
             points={[center.x, center.y, handlePosition.x, handlePosition.y]}
             stroke={isDragging ? "rgb(251 191 36 / 0.8)" : "rgb(252 211 77 / 0.6)"}
@@ -118,7 +110,11 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
             shadowColor="black"
             shadowBlur={5}
             shadowOpacity={0.5}
-            listening={false}
+            draggable
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            dragBoundFunc={dragBoundFunc}
+            onDragStart={() => setIsDragging(true)}
           />
         </Layer>
       </Stage>
@@ -126,4 +122,4 @@ const RotationJoystick = ({ value, onChange }: RotationJoystickProps) => {
   );
 };
 
-export default RotationJoystick;
+export default memo(RotationJoystickComponent);
