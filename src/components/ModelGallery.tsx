@@ -1,5 +1,6 @@
 import { headModels, HeadModel } from "../data/headModels";
 import { eyeModels, EyeModel } from "../data/eyeModels";
+import { mouthModels, MouthModel } from "../data/mouthModels";
 import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
 type EmojiPart = "Head" | "Left Eye" | "Right Eye" | "Mouth";
@@ -13,6 +14,8 @@ export default function ModelGallery({ selectedPart }: ModelGalleryProps) {
     setSelectedLeftEyeModel,
     selectedRightEyeModel,
     setSelectedRightEyeModel,
+    selectedMouthModel,
+    setSelectedMouthModel,
   } = useEmojiCustomization();
 
   const renderHeadModels = () => headModels.map((model: HeadModel) => {
@@ -55,16 +58,33 @@ export default function ModelGallery({ selectedPart }: ModelGalleryProps) {
     });
   };
 
+  const renderMouthModels = () => mouthModels.map((model: MouthModel) => {
+    if (!model.SvgComponent) return null;
+    const selected = selectedMouthModel === model.id;
+    const svgProps: React.SVGProps<SVGSVGElement> = {
+      width: '32', height: '32', fill: selected ? '#F87171' : '#D1D5DB'
+    };
+    const borderClass = selected
+      ? "border-red-400 bg-red-400/20 text-red-300"
+      : "border-gray-600 hover:border-gray-500 bg-gray-700/50 hover:bg-gray-700/80 text-gray-300 hover:text-white";
+    return (
+      <button
+        key={model.id}
+        onClick={() => setSelectedMouthModel(model.id)}
+        className={`flex-shrink-0 w-16 h-16 flex items-center justify-center p-1 rounded border-2 transition-colors duration-150 ${borderClass}`}
+        title={model.name}
+      >
+        <model.SvgComponent {...svgProps} />
+      </button>
+    );
+  });
+
   return (
     <div className="grid grid-cols-5 gap-2 overflow-y-auto overflow-x-hidden p-1 h-48 items-center justify-center custom-scrollbar">
       {selectedPart === "Head" && renderHeadModels()}
       {selectedPart === "Left Eye" && renderEyeModels("Left Eye")}
       {selectedPart === "Right Eye" && renderEyeModels("Right Eye")}
-      {selectedPart === "Mouth" && (
-        <p className="text-gray-400 text-sm text-center col-span-5 py-4">
-          Models for Mouth not yet available.
-        </p>
-      )}
+      {selectedPart === "Mouth" && renderMouthModels()}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { headModels } from "../data/headModels";
 import { eyeModels } from "../data/eyeModels";
+import { mouthModels } from "../data/mouthModels";
 import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
 
 function EmojiCanvas() {
@@ -14,6 +15,8 @@ function EmojiCanvas() {
     color: headColor,
     leftEyeColor,
     rightEyeColor,
+    selectedMouthModel,
+    mouthColor,
   } = useEmojiCustomization();
 
   const canvasSize = 600;
@@ -24,6 +27,8 @@ function EmojiCanvas() {
   const LeftEyeSvgComponent = leftEyeModelData?.SvgComponent;
   const rightEyeModelData = eyeModels.find(m => m.id === selectedRightEyeModel);
   const RightEyeSvgComponent = rightEyeModelData?.SvgComponent;
+  const mouthModelData = mouthModels.find(m => m.id === selectedMouthModel);
+  const MouthSvgComponent = mouthModelData?.SvgComponent;
 
   const headScaleX = size.x / 100;
   const headScaleY = size.y / 100;
@@ -40,7 +45,7 @@ function EmojiCanvas() {
   const eyeBaseSize = 20;
   const eyeScale = 1;
   const eyeOffsetX = 19;
-  const eyeOffsetY = -10;
+  const eyeOffsetY = -12;
 
   const leftEyeStyle = {
     position: 'absolute' as const,
@@ -57,6 +62,20 @@ function EmojiCanvas() {
     ...leftEyeStyle,
     left: `${position.x + eyeOffsetX * headScaleX}px`,
     fill: rightEyeColor,
+  };
+  const mouthBaseWidth = 100;
+  const mouthBaseHeight = 30;
+  const mouthOffsetX = 0;
+  const mouthOffsetY = 22;
+  const mouthStyle = {
+    position: 'absolute' as const,
+    left: `${position.x + mouthOffsetX * headScaleX}px`,
+    top: `${position.y + mouthOffsetY * headScaleY}px`,
+    width: `${mouthBaseWidth * headScaleX}px`,
+    height: `${mouthBaseHeight * headScaleY}px`,
+    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+    transformOrigin: 'center center',
+    fill: mouthColor,
   };
 
   return (
@@ -82,6 +101,11 @@ function EmojiCanvas() {
       {RightEyeSvgComponent && (
         <RightEyeSvgComponent
           style={rightEyeStyle}
+        />
+      )}
+      {MouthSvgComponent && (
+        <MouthSvgComponent
+          style={mouthStyle}
         />
       )}
 

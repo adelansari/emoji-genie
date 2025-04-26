@@ -2,6 +2,7 @@
 import { createContext, useState, useCallback, useContext, ReactNode } from 'react';
 import { HeadShapeType } from '../data/headModels';
 import { EyeShapeType } from '../data/eyeModels';
+import { MouthShapeType } from '../data/mouthModels';
 
 interface EmojiCustomizationContextType {
     position: { x: number; y: number };
@@ -22,6 +23,10 @@ interface EmojiCustomizationContextType {
     setLeftEyeColor: (color: string) => void;
     rightEyeColor: string;
     setRightEyeColor: (color: string) => void;
+    selectedMouthModel: MouthShapeType;
+    setSelectedMouthModel: (model: MouthShapeType) => void;
+    mouthColor: string;
+    setMouthColor: (color: string) => void;
 }
 
 // Create the context with a default value (can be null or a default state)
@@ -50,6 +55,8 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     const [selectedRightEyeModel, _setSelectedRightEyeModel] = useState<EyeShapeType>("eye1");
     const [leftEyeColor, _setLeftEyeColor] = useState("#FFFFFF");
     const [rightEyeColor, _setRightEyeColor] = useState("#FFFFFF");
+    const [selectedMouthModel, _setSelectedMouthModel] = useState<MouthShapeType>("mouth1");
+    const [mouthColor, _setMouthColor] = useState("#FFFFFF");
 
     // Memoized setters
     const setPosition = useCallback((newPosition: { x: number; y: number }) => {
@@ -83,6 +90,12 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     const setRightEyeColor = useCallback((newColor: string) => {
         _setRightEyeColor(newColor);
     }, []);
+    const setSelectedMouthModel = useCallback((newModel: MouthShapeType) => {
+        _setSelectedMouthModel(newModel);
+    }, []);
+    const setMouthColor = useCallback((newColor: string) => {
+        _setMouthColor(newColor);
+    }, []);
 
     const value = {
         position,
@@ -103,6 +116,10 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         setLeftEyeColor,
         rightEyeColor,
         setRightEyeColor,
+        selectedMouthModel,
+        setSelectedMouthModel,
+        mouthColor,
+        setMouthColor,
     };
 
     return (
