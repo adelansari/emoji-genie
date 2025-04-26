@@ -1,7 +1,7 @@
 import { createContext, useState, useCallback, useContext, ReactNode } from 'react';
 import { ModelIdType } from '../data/modelTypes';
 import { EmojiPartType } from '../data/emoji/emojiModels';
-import { StickerPartType } from '../data/sticker/stickerModels';
+import { StickerPartType, StickerSubcategoryType, subcategories } from '../data/sticker/stickerModels';
 
 export type EmojiType = 'emoji' | 'sticker';
 
@@ -42,11 +42,13 @@ interface EmojiCustomizationContextType {
     // Sticker mode selections
     selectedStickerPart: StickerPartType;
     setSelectedStickerPart: (part: StickerPartType) => void;
-    selectedStickerModels: Record<StickerPartType, ModelIdType | null>;
-    setSelectedStickerModel: (part: StickerPartType, modelId: ModelIdType | null) => void;
+    selectedStickerSubcategory: StickerSubcategoryType;
+    setSelectedStickerSubcategory: (subcategory: StickerSubcategoryType) => void;
+    selectedStickerModels: Record<StickerPartType, Record<StickerSubcategoryType, ModelIdType | null>>;
+    setSelectedStickerModel: (part: StickerPartType, subcategory: StickerSubcategoryType, modelId: ModelIdType | null) => void;
     
     // Get transforms for specific part types
-    getTransform: (mode: EmojiType, part: string) => Transform;
+    getTransform: (mode: EmojiType, part: string, subcategory?: StickerSubcategoryType) => Transform;
     
     // Legacy prop for backward compatibility during refactoring
     selectedHeadModel: ModelIdType;
@@ -82,63 +84,120 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     
     // Sticker mode states
     const [selectedStickerPart, _setSelectedStickerPart] = useState<StickerPartType>('face');
-    const [selectedStickerModels, _setSelectedStickerModels] = useState<Record<StickerPartType, ModelIdType | null>>({
-        face: 'shape01',
-        eyes: null,
-        hair: null,
-        others: null
+    const [selectedStickerSubcategory, _setSelectedStickerSubcategory] = useState<StickerSubcategoryType>('shape');
+    
+    // Initialize with the proper structure for all subcategories
+    const [selectedStickerModels, _setSelectedStickerModels] = useState<Record<StickerPartType, Record<StickerSubcategoryType, ModelIdType | null>>>({
+        face: {
+            shape: 'shape01',
+            mouth: null,
+            eyeShape: null,
+            eyebrows: null,
+            default: null
+        },
+        eyes: {
+            shape: null,
+            mouth: null,
+            eyeShape: 'eyeShape01',
+            eyebrows: 'eyebrows01',
+            default: null
+        },
+        hair: {
+            shape: null,
+            mouth: null,
+            eyeShape: null,
+            eyebrows: null,
+            default: 'hair01'
+        },
+        others: {
+            shape: null,
+            mouth: null,
+            eyeShape: null,
+            eyebrows: null,
+            default: 'accessory01'
+        }
     });
     
-    // Store transforms by mode and part type
-    // Using a map structure: transforms[mode][partType] = { position, rotation, size, color }
-    const [transforms, setTransforms] = useState<Record<EmojiType, Record<string, Transform>>>({
+    // Store transforms by mode, part type, and subcategory
+    // Using a map structure: transforms[mode][partType][subcategory] = { position, rotation, size, color }
+    const [transforms, setTransforms] = useState<Record<EmojiType, Record<string, Record<string, Transform>>>>({
         emoji: {
-            head: { ...defaultTransform },
-            hat: { ...defaultTransform },
-            eyes: { ...defaultTransform },
-            mouth: { ...defaultTransform }
+            head: { default: { ...defaultTransform } },
+            hat: { default: { ...defaultTransform } },
+            eyes: { default: { ...defaultTransform } },
+            mouth: { default: { ...defaultTransform } }
         },
         sticker: {
-            face: { ...defaultTransform },
-            eyes: { ...defaultTransform },
-            hair: { ...defaultTransform },
-            others: { ...defaultTransform }
+            face: { 
+                shape: { ...defaultTransform },
+                mouth: { ...defaultTransform }
+            },
+            eyes: { 
+                eyeShape: { ...defaultTransform }, 
+                eyebrows: { ...defaultTransform }
+            },
+            hair: { 
+                default: { ...defaultTransform } 
+            },
+            others: { 
+                default: { ...defaultTransform } 
+            }
         }
     });
 
-    // Helper to get current active part based on mode
-    const getCurrentPart = useCallback(() => {
-        return emojiType === 'emoji' ? selectedEmojiPart : selectedStickerPart;
-    }, [emojiType, selectedEmojiPart, selectedStickerPart]);
+    // Helper to get current active part and subcategory based on mode
+    const getCurrentPartAndSubcategory = useCallback(() => {
+        if (emojiType === 'emoji') {
+            return { part: selectedEmojiPart, subcategory: 'default' as StickerSubcategoryType };
+        } else {
+            return { part: selectedStickerPart, subcategory: selectedStickerSubcategory };
+        }
+    }, [emojiType, selectedEmojiPart, selectedStickerPart, selectedStickerSubcategory]);
 
-    // Get transform for a specific mode and part
-    const getTransform = useCallback((mode: EmojiType, part: string) => {
-        return transforms[mode][part] || defaultTransform;
+    // Get transform for a specific mode, part and subcategory
+    const getTransform = useCallback((mode: EmojiType, part: string, subcategory?: StickerSubcategoryType): Transform => {
+        const subcat = subcategory || (mode === 'emoji' ? 'default' : 'shape');
+        
+        if (transforms[mode]?.[part]?.[subcat]) {
+            return transforms[mode][part][subcat];
+        }
+        
+        // Fallback to default transform if not found
+        return defaultTransform;
     }, [transforms]);
     
     // Get current active transform
     const getCurrentTransform = useCallback(() => {
         const currentMode = emojiType;
-        const currentPart = getCurrentPart();
-        return getTransform(currentMode, currentPart);
-    }, [emojiType, getCurrentPart, getTransform]);
+        const { part, subcategory } = getCurrentPartAndSubcategory();
+        return getTransform(currentMode, part, subcategory);
+    }, [emojiType, getCurrentPartAndSubcategory, getTransform]);
 
-    // Update transform for current active part
+    // Update transform for current active part and subcategory
     const updateCurrentTransform = useCallback((updates: Partial<Transform>) => {
         const currentMode = emojiType;
-        const currentPart = getCurrentPart();
+        const { part, subcategory } = getCurrentPartAndSubcategory();
         
-        setTransforms(prev => ({
-            ...prev,
-            [currentMode]: {
-                ...prev[currentMode],
-                [currentPart]: {
-                    ...prev[currentMode][currentPart],
-                    ...updates
+        setTransforms(prev => {
+            // Ensure nested structure exists
+            const currentModeTransforms = prev[currentMode] || {};
+            const currentPartTransforms = currentModeTransforms[part] || {};
+            
+            return {
+                ...prev,
+                [currentMode]: {
+                    ...currentModeTransforms,
+                    [part]: {
+                        ...currentPartTransforms,
+                        [subcategory]: {
+                            ...((currentPartTransforms[subcategory] || defaultTransform)),
+                            ...updates
+                        }
+                    }
                 }
-            }
-        }));
-    }, [emojiType, getCurrentPart]);
+            };
+        });
+    }, [emojiType, getCurrentPartAndSubcategory]);
 
     // Memoized setters
     const setPosition = useCallback((newPosition: { x: number; y: number }) => {
@@ -174,12 +233,21 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     
     const setSelectedStickerPart = useCallback((part: StickerPartType) => {
         _setSelectedStickerPart(part);
+        // Set default subcategory when changing part
+        _setSelectedStickerSubcategory(subcategories[part][0]);
     }, []);
     
-    const setSelectedStickerModel = useCallback((part: StickerPartType, modelId: ModelIdType | null) => {
+    const setSelectedStickerSubcategory = useCallback((subcategory: StickerSubcategoryType) => {
+        _setSelectedStickerSubcategory(subcategory);
+    }, []);
+    
+    const setSelectedStickerModel = useCallback((part: StickerPartType, subcategory: StickerSubcategoryType, modelId: ModelIdType | null) => {
         _setSelectedStickerModels(prev => ({
             ...prev,
-            [part]: modelId
+            [part]: {
+                ...prev[part],
+                [subcategory]: modelId
+            }
         }));
     }, []);
     
@@ -208,6 +276,8 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         setSelectedEmojiModel,
         selectedStickerPart,
         setSelectedStickerPart,
+        selectedStickerSubcategory,
+        setSelectedStickerSubcategory,
         selectedStickerModels,
         setSelectedStickerModel,
         getTransform,
