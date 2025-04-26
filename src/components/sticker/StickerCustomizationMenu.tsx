@@ -5,7 +5,7 @@ import SizeControlSimple from "../shared/SizeControlSimple";
 import RotationJoystick from "../shared/RotationJoystick";
 import ColorPicker from "../shared/ColorPicker";
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
-import { StickerPartType } from "../../data/sticker/stickerModels";
+import { StickerPartType, subcategories, subcategoryNames } from "../../data/sticker/stickerModels";
 
 type EditMode = "none" | "position" | "size" | "rotation" | "color";
 const editModes: EditMode[] = ["position", "size", "rotation", "color"];
@@ -17,6 +17,8 @@ export default function StickerCustomizationMenu() {
   const {
     selectedStickerPart, 
     setSelectedStickerPart,
+    selectedStickerSubcategory,
+    setSelectedStickerSubcategory
   } = useEmojiCustomization();
 
   const [mode, setMode] = useState<EditMode>("none");
@@ -45,8 +47,12 @@ export default function StickerCustomizationMenu() {
     return part.charAt(0).toUpperCase() + part.slice(1);
   };
 
+  // Get available subcategories for the current selected part
+  const availableSubcategories = subcategories[selectedStickerPart];
+
   return (
     <div className="flex-shrink-0 w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-4 flex flex-col gap-4 text-white">
+      {/* Main category tabs */}
       <nav className="bg-gray-900/50 rounded-md p-1">
         <ul className="flex justify-around gap-1">
           {stickerParts.map((part) => (
@@ -65,6 +71,28 @@ export default function StickerCustomizationMenu() {
           ))}
         </ul>
       </nav>
+
+      {/* Subcategory selection */}
+      {availableSubcategories.length > 1 && (
+        <nav className="bg-gray-900/30 rounded-md p-1">
+          <ul className="flex justify-around gap-1">
+            {availableSubcategories.map((subcategory) => (
+              <li key={subcategory} className="flex-1">
+                <button
+                  onClick={() => setSelectedStickerSubcategory(subcategory)}
+                  className={`w-full py-1.5 px-2 rounded text-xs font-medium transition-colors duration-150 ${
+                    selectedStickerSubcategory === subcategory
+                      ? "bg-blue-500 text-white shadow-sm"
+                      : "bg-gray-700/40 hover:bg-gray-600/60 text-gray-300"
+                  }`}
+                >
+                  {subcategoryNames[subcategory]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
 
       <div className="bg-gray-900/50 rounded-md p-2 min-h-[100px]">
         <StickerModelGallery />

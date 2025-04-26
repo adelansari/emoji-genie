@@ -4,7 +4,7 @@ import { findStickerModel } from '../../data/sticker/stickerModels';
 
 /**
  * Canvas component for rendering sticker characters
- * Uses separate transform properties for each part
+ * Uses separate transform properties for each part and subcategory
  */
 function StickerCanvas() {
   const { 
@@ -14,14 +14,28 @@ function StickerCanvas() {
 
   const canvasSize = 600;
   
-  // Retrieve selected models
-  const faceModel = findStickerModel('face', selectedStickerModels.face || 'shape01');
-  const eyesModel = findStickerModel('eyes', selectedStickerModels.eyes || null);
-  const hairModel = findStickerModel('hair', selectedStickerModels.hair || null);
+  // Retrieve selected models for all categories and subcategories
+  const faceModel = selectedStickerModels.face && selectedStickerModels.face.shape ? 
+    findStickerModel('face', 'shape', selectedStickerModels.face.shape) : null;
   
-  // Helper function to create style based on transform
-  const createStyle = (part: string) => {
-    const transform = getTransform('sticker', part);
+  const mouthModel = selectedStickerModels.face && selectedStickerModels.face.mouth ? 
+    findStickerModel('face', 'mouth', selectedStickerModels.face.mouth) : null;
+    
+  const eyeShapeModel = selectedStickerModels.eyes && selectedStickerModels.eyes.eyeShape ? 
+    findStickerModel('eyes', 'eyeShape', selectedStickerModels.eyes.eyeShape) : null;
+  
+  const eyebrowsModel = selectedStickerModels.eyes && selectedStickerModels.eyes.eyebrows ? 
+    findStickerModel('eyes', 'eyebrows', selectedStickerModels.eyes.eyebrows) : null;
+  
+  const hairModel = selectedStickerModels.hair && selectedStickerModels.hair.default ? 
+    findStickerModel('hair', 'default', selectedStickerModels.hair.default) : null;
+  
+  const othersModel = selectedStickerModels.others && selectedStickerModels.others.default ? 
+    findStickerModel('others', 'default', selectedStickerModels.others.default) : null;
+  
+  // Helper function to create style based on transform with specific part and subcategory
+  const createStyle = (part: string, subcategory: string) => {
+    const transform = getTransform('sticker', part, subcategory as any);
     const { position, rotation, size } = transform;
     const scaleX = size.x / 100;
     const scaleY = size.y / 100;
@@ -53,26 +67,47 @@ function StickerCanvas() {
       {/* Render all selected sticker parts with their individual transforms */}
       {faceModel && (
         <faceModel.SvgComponent
-          style={createStyle('face')}
-          fill={getTransform('sticker', 'face').color}
+          style={createStyle('face', 'shape')}
+          fill={getTransform('sticker', 'face', 'shape').color}
         />
       )}
       
-      {eyesModel && (
-        <eyesModel.SvgComponent
-          style={{...createStyle('eyes'), zIndex: 2}}
+      {mouthModel && (
+        <mouthModel.SvgComponent
+          style={{...createStyle('face', 'mouth'), zIndex: 2}}
+          fill="#333333"
+        />
+      )}
+      
+      {eyeShapeModel && (
+        <eyeShapeModel.SvgComponent
+          style={{...createStyle('eyes', 'eyeShape'), zIndex: 2}}
+          fill="#333333"
+        />
+      )}
+      
+      {eyebrowsModel && (
+        <eyebrowsModel.SvgComponent
+          style={{...createStyle('eyes', 'eyebrows'), zIndex: 3}}
           fill="#333333"
         />
       )}
       
       {hairModel && (
         <hairModel.SvgComponent
-          style={{...createStyle('hair'), zIndex: 3}}
+          style={{...createStyle('hair', 'default'), zIndex: 3}}
           fill="#663300"
         />
       )}
       
-      {!faceModel && !eyesModel && !hairModel && (
+      {othersModel && (
+        <othersModel.SvgComponent
+          style={{...createStyle('others', 'default'), zIndex: 4}}
+          fill="#333333"
+        />
+      )}
+      
+      {!faceModel && !eyeShapeModel && !eyebrowsModel && !hairModel && !mouthModel && !othersModel && (
         <p style={{ color: 'white', textAlign: 'center', paddingTop: '50px', position: 'relative', zIndex: 5 }}>
           No sticker parts selected. Choose from the gallery.
         </p>
