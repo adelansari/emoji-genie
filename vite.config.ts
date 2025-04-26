@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     svgr({
       svgrOptions: {
-        svgo: false,
+        svgo: true,
         plugins: ['@svgr/plugin-svgo', '@svgr/plugin-jsx'],
         replaceAttrValues: {},
       },
