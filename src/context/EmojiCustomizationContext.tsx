@@ -1,6 +1,8 @@
 import { createContext, useState, useCallback, useContext, ReactNode } from 'react';
 import { HeadShapeType } from '../data/headModels';
 
+export type EmojiType = 'emoji' | 'sticker';
+
 interface EmojiCustomizationContextType {
     position: { x: number; y: number };
     setPosition: (pos: { x: number; y: number }) => void;
@@ -12,6 +14,8 @@ interface EmojiCustomizationContextType {
     setSelectedHeadModel: (model: HeadShapeType) => void;
     color: string;
     setColor: (color: string) => void;
+    emojiType: EmojiType;
+    setEmojiType: (type: EmojiType) => void;
 }
 
 // Create the context with a default value (can be null or a default state)
@@ -36,6 +40,7 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     const [size, _setSize] = useState({ x: 200, y: 200 }); // Initial size adjusted for example
     const [selectedHeadModel, _setSelectedHeadModel] = useState<HeadShapeType>("default");
     const [color, _setColor] = useState("#FFFFFF");
+    const [emojiType, _setEmojiType] = useState<EmojiType>("emoji");
 
     // Memoized setters
     const setPosition = useCallback((newPosition: { x: number; y: number }) => {
@@ -57,6 +62,10 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     const setColor = useCallback((newColor: string) => {
         _setColor(newColor);
     }, []);
+    
+    const setEmojiType = useCallback((newType: EmojiType) => {
+        _setEmojiType(newType);
+    }, []);
 
     const value = {
         position,
@@ -69,6 +78,8 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         setSelectedHeadModel,
         color,
         setColor,
+        emojiType,
+        setEmojiType
     };
 
     return (
