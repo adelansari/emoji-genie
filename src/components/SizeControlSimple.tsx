@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Lock, Unlock, RotateCcw } from 'lucide-react';
 
 type SizeControlSimpleProps = {
@@ -9,7 +9,7 @@ type SizeControlSimpleProps = {
     maxSize?: number;
 };
 
-const SizeControlSimple = ({
+const SizeControlSimpleComponent = ({
     sizeX,
     sizeY,
     onChange,
@@ -27,7 +27,7 @@ const SizeControlSimple = ({
         // If locked, the ratio used is the one stored when it was last unlocked or initialized
     }, [sizeX, sizeY, isLocked]);
 
-    const handleXChange = (newX: number) => {
+    const handleXChange = useCallback((newX: number) => {
         if (isLocked) {
             const newY = aspectRatio !== 0 ? Math.round(newX / aspectRatio) : sizeY;
             const clampedY = Math.max(minSize, Math.min(maxSize, newY));
@@ -42,9 +42,9 @@ const SizeControlSimple = ({
         } else {
             onChange({ x: newX, y: sizeY });
         }
-    };
+    }, [isLocked, aspectRatio, sizeY, minSize, maxSize, onChange]);
 
-    const handleYChange = (newY: number) => {
+    const handleYChange = useCallback((newY: number) => {
         if (isLocked) {
             const newX = Math.round(newY * aspectRatio);
             const clampedX = Math.max(minSize, Math.min(maxSize, newX));
@@ -59,20 +59,28 @@ const SizeControlSimple = ({
         } else {
             onChange({ x: sizeX, y: newY });
         }
-    };
+    }, [isLocked, aspectRatio, sizeX, minSize, maxSize, onChange]);
 
-    const toggleLock = () => {
+    const toggleLock = useCallback(() => {
         const nextLockedState = !isLocked;
         setIsLocked(nextLockedState);
         // When locking, recalculate and store the current aspect ratio
         if (nextLockedState && sizeY !== 0) {
             setAspectRatio(sizeX / sizeY);
         }
-    };
+    }, [isLocked, sizeX, sizeY]);
 
-    const handleReset = () => {
+    const handleReset = useCallback(() => {
         onChange({ x: 100, y: 100 });
-    };
+    }, [onChange]);
+
+    const handleXInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        handleXChange(Number(e.target.value));
+    }, [handleXChange]);
+
+    const handleYInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        handleYChange(Number(e.target.value));
+    }, [handleYChange]);
 
     const sliderClass = "w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50";
     const baseButtonClass = "p-1.5 rounded transition-colors duration-150 ease-in-out border";
@@ -102,7 +110,7 @@ const SizeControlSimple = ({
                         min={minSize}
                         max={maxSize}
                         value={sizeX}
-                        onChange={(e) => handleXChange(Number(e.target.value))}
+                        onChange={handleXInputChange} // Use memoized handler
                         className={sliderClass}
                         aria-label="X Size"
                     />
@@ -117,7 +125,7 @@ const SizeControlSimple = ({
                         min={minSize}
                         max={maxSize}
                         value={sizeY}
-                        onChange={(e) => handleYChange(Number(e.target.value))}
+                        onChange={handleYInputChange} // Use memoized handler
                         className={sliderClass}
                         aria-label="Y Size"
                     />
@@ -128,4 +136,4 @@ const SizeControlSimple = ({
     );
 };
 
-export default SizeControlSimple;
+export default memo(SizeControlSimpleComponent);
