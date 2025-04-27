@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useEmojiCustomization } from './EmojiCustomizationContext';
+import { loadImageFromLocalStorage } from '../utils/exportUtils';
 
 interface GameContextType {
   isPlaying: boolean;
@@ -7,11 +8,13 @@ interface GameContextType {
   highScore: number;
   gameSpeed: number;
   gameOver: boolean;
+  characterImageUrl: string | null;
   startGame: () => void;
   endGame: () => void;
   incrementScore: () => void;
   resetGame: () => void;
   setGameSpeed: (speed: number) => void;
+  setCharacterImageUrl: (url: string) => void;
 }
 
 const GameContext = createContext<GameContextType>(null!);
@@ -24,6 +27,10 @@ export const useGame = () => {
   return context;
 };
 
+// Storage keys
+const HIGH_SCORE_KEY = 'flappyEmojiHighScore';
+const CHARACTER_IMAGE_KEY = 'flappyEmojiCharacter';
+
 interface GameProviderProps {
   children: ReactNode;
 }
@@ -34,20 +41,28 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [highScore, setHighScore] = useState(0);
   const [gameSpeed, setGameSpeed] = useState(3);
   const [gameOver, setGameOver] = useState(false);
+  const [characterImageUrl, setCharacterImageUrl] = useState<string | null>(null);
   
   const { emojiType } = useEmojiCustomization();
 
-  // Load high score from local storage on component mount
+  // Load high score and character image from local storage on component mount
   useEffect(() => {
-    const storedHighScore = localStorage.getItem('flappyEmojiHighScore');
+    // Load high score
+    const storedHighScore = localStorage.getItem(HIGH_SCORE_KEY);
     if (storedHighScore) {
       setHighScore(parseInt(storedHighScore, 10));
+    }
+
+    // Load character image
+    const storedCharacterImage = loadImageFromLocalStorage(CHARACTER_IMAGE_KEY);
+    if (storedCharacterImage) {
+      setCharacterImageUrl(storedCharacterImage);
     }
   }, []);
 
   // Save high score to local storage whenever it changes
   useEffect(() => {
-    localStorage.setItem('flappyEmojiHighScore', highScore.toString());
+    localStorage.setItem(HIGH_SCORE_KEY, highScore.toString());
   }, [highScore]);
 
   // Reset game when switching emoji type
@@ -89,11 +104,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     highScore,
     gameSpeed,
     gameOver,
+    characterImageUrl,
     startGame,
     endGame,
     incrementScore,
     resetGame,
-    setGameSpeed
+    setGameSpeed,
+    setCharacterImageUrl
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

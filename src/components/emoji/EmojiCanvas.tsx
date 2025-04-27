@@ -39,6 +39,7 @@ function EmojiCanvas() {
   
   return (
     <div
+      id="emoji-canvas-container"
       className="bg-gray-700 rounded-lg shadow-xl overflow-hidden relative"
       style={{ width: `${canvasSize}px`, height: `${canvasSize}px` }}
     >

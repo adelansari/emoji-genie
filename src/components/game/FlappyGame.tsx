@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { useGame } from '../../context/GameContext';
 import { useEmojiCustomization } from '../../context/EmojiCustomizationContext';
-import { findEmojiModel } from '../../data/emoji/emojiModels';
-import { findStickerModel } from '../../data/sticker/stickerModels';
-import { Stage, Layer, Rect, Text, Group, Circle } from 'react-konva';
+import { Stage, Layer, Rect, Text, Group, Circle, Image } from 'react-konva';
 
 // Reduce gravity and increase flap strength for better gameplay
 const GRAVITY = 0.25;
@@ -22,14 +20,11 @@ const FlappyGame = () => {
     startGame,
     endGame,
     incrementScore,
-    resetGame
+    resetGame,
+    characterImageUrl
   } = useGame();
 
-  const { 
-    emojiType,
-    selectedEmojiModels,
-    selectedStickerModels
-  } = useEmojiCustomization();
+  const { emojiType } = useEmojiCustomization();
   
   const [birdPosition, setBirdPosition] = useState({ x: 100, y: 250 });
   const [birdVelocity, setBirdVelocity] = useState(0);
@@ -37,13 +32,31 @@ const FlappyGame = () => {
   const animationRef = useRef<number>();
   const stageRef = useRef<any>(null);
   const lastTimeRef = useRef<number>(0);
+  const [characterImage, setCharacterImage] = useState<HTMLImageElement | null>(null);
 
   const canvasWidth = 600;
   const canvasHeight = 600;
   
-  // Determine the character color based on emoji/sticker type
+  // Default character color for fallback
   const characterColor = emojiType === 'emoji' ? '#FACC15' : '#FF6B6B';
   
+  // Load the custom character image if available
+  useEffect(() => {
+    if (characterImageUrl) {
+      const image = new window.Image();
+      image.src = characterImageUrl;
+      image.onload = () => {
+        setCharacterImage(image);
+      };
+      image.onerror = () => {
+        console.error('Failed to load character image');
+        setCharacterImage(null);
+      };
+    } else {
+      setCharacterImage(null);
+    }
+  }, [characterImageUrl]);
+
   // Create a pipe at a random height
   const createPipe = useCallback(() => {
     const minHeight = 50;
@@ -197,6 +210,18 @@ const FlappyGame = () => {
   
   // Determine shape based on emoji/sticker type
   const renderCharacter = () => {
+    // If we have a custom character image from export, use that
+    if (characterImage) {
+      return (
+        <Image
+          image={characterImage}
+          width={BIRD_SIZE}
+          height={BIRD_SIZE}
+        />
+      );
+    }
+    
+    // Otherwise use the default shapes based on emoji type
     if (emojiType === 'emoji') {
       // For emoji, use a circle
       return (
@@ -355,6 +380,26 @@ const FlappyGame = () => {
             x={20}
             y={50}
           />
+          
+          {/* Custom character badge if exported */}
+          {characterImage && (
+            <Group x={canvasWidth - 120} y={20}>
+              <Rect
+                width={100}
+                height={30}
+                fill="rgba(0,0,0,0.5)"
+                cornerRadius={15}
+              />
+              <Text
+                text="Custom Character"
+                fontSize={12}
+                fontFamily="Arial"
+                fill="#FFDD00"
+                x={8}
+                y={9}
+              />
+            </Group>
+          )}
           
           {/* Emoji/Sticker character as the bird */}
           <Group
