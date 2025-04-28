@@ -5,6 +5,7 @@ import svgr from 'vite-plugin-svgr'
 import path from 'path'
 
 export default defineConfig(({ command }) => ({
+  base: command === 'serve' ? '/' : '/emoji-genie/',
   plugins: [
     react(),
     tailwindcss(),
@@ -19,5 +20,14 @@ export default defineConfig(({ command }) => ({
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
   },
-  base: command === 'serve' ? '/' : '/emoji-genie/'
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'tailwindcss'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
 }))
