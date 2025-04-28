@@ -20,32 +20,4 @@ export default defineConfig({
       exclude: "",
     })
   ],
-  build: {
-    rollupOptions: {
-      output: {
-        // Ensure dependencies are properly preserved and bundled
-        manualChunks(id) {
-          // Most crucial - keep all React libraries together to avoid reference issues
-          if (id.includes('node_modules/react') || 
-              id.includes('node_modules/react-dom') || 
-              id.includes('node_modules/scheduler') ||
-              id.includes('node_modules/use-sync-external-store') || 
-              id.includes('node_modules/hoist-non-react-statics')) {
-            return 'react';
-          }
-          
-          // Keep Konva related code together
-          if (id.includes('node_modules/konva') || 
-              id.includes('node_modules/react-konva')) {
-            return 'konva';
-          }
-          
-          // Group other third-party libraries
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
-        }
-      }
-    }
-  },
 })
