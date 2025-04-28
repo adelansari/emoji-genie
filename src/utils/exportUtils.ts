@@ -8,8 +8,9 @@ import Konva from 'konva';
 /**
  * Helper function to convert modern color formats to compatible rgb/rgba
  * @param element - The DOM element to process
+ * @returns The cloned element that was prepared for capture
  */
-const prepareElementForCapture = (element: HTMLElement): void => {
+const prepareElementForCapture = (element: HTMLElement): HTMLElement => {
   // Deep clone the element to avoid modifying the original
   const clonedElement = element.cloneNode(true) as HTMLElement;
   clonedElement.id = 'capture-clone';
