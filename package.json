@@ -12,7 +12,7 @@
   "dependencies": {
     "@svgr/plugin-svgo": "^8.1.0",
     "@tailwindcss/vite": "^4.1.4",
-    "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^1.5.10",
     "konva": "^9.3.20",
     "lucide-react": "^0.501.0",
     "react": "^19.0.0",
