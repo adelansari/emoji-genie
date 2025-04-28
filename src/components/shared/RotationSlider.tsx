@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext"; // Import the hook
+import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 
 function RotationSlider() {
   const { rotation, setRotation } = useEmojiCustomization();

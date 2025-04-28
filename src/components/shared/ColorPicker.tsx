@@ -1,5 +1,5 @@
 import { ColorResult, ChromePicker, TwitterPicker } from 'react-color';
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext"; // Import the hook
+import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 import { useCallback, memo } from 'react';
 
 function ColorPickerComponent() {

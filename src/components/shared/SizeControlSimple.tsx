@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { Lock, Unlock, RotateCcw } from 'lucide-react';
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
+import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 
 const SizeControlSimpleComponent = ({ minSize = 1, maxSize = 500 }) => {
     const { size, setSize } = useEmojiCustomization();

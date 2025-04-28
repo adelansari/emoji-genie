@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, memo } from "react";
 import { Circle, Layer, Stage } from "react-konva";
 import Konva from "konva";
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
+import { RotateCcw } from 'lucide-react';
+import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 
 function JoystickController() {
   const { position, setPosition } = useEmojiCustomization();
@@ -36,6 +37,11 @@ function JoystickController() {
     setPosition({ x: clampedX, y: clampedY });
   }, [setPosition, center.x, center.y, controlRadius, canvasSize, elementSize]);
 
+  // Add a reset handler to center the position
+  const handleReset = useCallback(() => {
+    setPosition({ x: canvasSize / 2, y: canvasSize / 2 });
+  }, [setPosition, canvasSize]);
+
   const handleDragMove = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
     const pos = node.position();
@@ -61,8 +67,20 @@ function JoystickController() {
     };
   }, [center.x, center.y, controlRadius]);
 
+  const baseButtonClass = "p-1.5 rounded transition-colors duration-150 ease-in-out border";
+  const resetButtonClass = `${baseButtonClass} bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300 hover:text-white`;
+
   return (
     <div className="bg-gray-700/50 rounded-lg shadow-xl p-2 flex flex-col items-center">
+      <div className="w-full flex justify-between items-center mb-2 px-3">
+        <h3 className="text-lg font-semibold text-yellow-300">Position</h3>
+        <div className="flex items-center">
+          <button onClick={handleReset} className={resetButtonClass} title="Reset Position to Center">
+            <RotateCcw size={16} />
+          </button>
+        </div>
+      </div>
+      
       <Stage
         width={containerSize}
         height={containerSize}

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { Circle, Layer, Stage, Line } from "react-konva";
+import { RotateCcw } from 'lucide-react';
 import Konva from "konva";
-import { useEmojiCustomization } from "../context/EmojiCustomizationContext";
+import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 
 const RotationJoystickComponent = () => {
   const { rotation, setRotation } = useEmojiCustomization();
@@ -24,6 +25,11 @@ const RotationJoystickComponent = () => {
 
   const [handlePosition, setHandlePosition] = useState(calculateHandlePosition(rotation));
 
+  // Add reset handler to reset rotation to 0 degrees
+  const handleReset = useCallback(() => {
+    setRotation(0);
+  }, [setRotation]);
+
   useEffect(() => {
     if (!isDragging) {
       setHandlePosition(calculateHandlePosition(rotation));
@@ -45,7 +51,10 @@ const RotationJoystickComponent = () => {
     const node = e.target;
     const pos = node.position();
     const newRotation = calculateAngleFromPosition(pos.x, pos.y);
+    
+    // Update both the rotation and the handle position simultaneously
     setRotation(newRotation);
+    setHandlePosition(pos);
     setIsDragging(true);
   }, [setRotation, calculateAngleFromPosition]);
 
@@ -64,8 +73,20 @@ const RotationJoystickComponent = () => {
     };
   }, [center.x, center.y, trackRadius]);
 
+  const baseButtonClass = "p-1.5 rounded transition-colors duration-150 ease-in-out border";
+  const resetButtonClass = `${baseButtonClass} bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300 hover:text-white`;
+
   return (
     <div className="p-2 bg-gray-700/50 rounded-lg flex flex-col items-center">
+      <div className="w-full flex justify-between items-center mb-2 px-3">
+        <h3 className="text-lg font-semibold text-yellow-300">Rotation</h3>
+        <div className="flex items-center">
+          <button onClick={handleReset} className={resetButtonClass} title="Reset Rotation to 0°">
+            <RotateCcw size={16} />
+          </button>
+        </div>
+      </div>
+    
       <Stage
         width={containerSize}
         height={containerSize}
@@ -112,6 +133,7 @@ const RotationJoystickComponent = () => {
           />
         </Layer>
       </Stage>
+      <p className="text-center text-gray-300 mt-2">{rotation}°</p>
     </div>
   );
 };
