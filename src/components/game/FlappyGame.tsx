@@ -29,7 +29,7 @@ const FlappyGame = () => {
   const [birdPosition, setBirdPosition] = useState({ x: 100, y: 250 });
   const [birdVelocity, setBirdVelocity] = useState(0);
   const [pipes, setPipes] = useState<Array<{ x: number; topHeight: number; passed: boolean }>>([]);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   const stageRef = useRef<any>(null);
   const lastTimeRef = useRef<number>(0);
   const [characterImage, setCharacterImage] = useState<HTMLImageElement | null>(null);
@@ -98,7 +98,7 @@ const FlappyGame = () => {
       if (!lastTimeRef.current) {
         lastTimeRef.current = timestamp;
       }
-      const deltaTime = timestamp - lastTimeRef.current;
+      // Remove the unused deltaTime variable
       lastTimeRef.current = timestamp;
       
       // Update bird position - apply gravity more gently
@@ -144,26 +144,42 @@ const FlappyGame = () => {
       setPipes(updatedPipes);
       
       // Check for collision with pipes
-      const birdRightEdge = birdPosition.x + BIRD_SIZE;
-      const birdBottomEdge = birdPosition.y + BIRD_SIZE;
+      const birdLeftEdge = birdPosition.x - BIRD_SIZE / 2;
+      const birdRightEdge = birdPosition.x + BIRD_SIZE / 2;
+      const birdTopEdge = birdPosition.y - BIRD_SIZE / 2;
+      const birdBottomEdge = birdPosition.y + BIRD_SIZE / 2;
       
+      // Add a smaller hit area for better gameplay (80% of the bird size)
+      const hitboxReduction = BIRD_SIZE * 0.2;
+      const hitboxLeft = birdLeftEdge + hitboxReduction;
+      const hitboxRight = birdRightEdge - hitboxReduction;
+      const hitboxTop = birdTopEdge + hitboxReduction;
+      const hitboxBottom = birdBottomEdge - hitboxReduction;
+      
+      let collision = false;
       for (const pipe of updatedPipes) {
+        // Only check for collisions if the bird is horizontally aligned with the pipe
         if (
-          birdRightEdge > pipe.x && 
-          birdPosition.x < pipe.x + PIPE_WIDTH
+          hitboxRight > pipe.x && 
+          hitboxLeft < pipe.x + PIPE_WIDTH
         ) {
-          // Check if bird hits top pipe
-          if (birdPosition.y < pipe.topHeight) {
-            endGame();
-            return;
+          // Check if bird hits top pipe - with reduced hitbox
+          if (hitboxTop < pipe.topHeight) {
+            collision = true;
+            break;
           }
           
-          // Check if bird hits bottom pipe
-          if (birdBottomEdge > pipe.topHeight + PIPE_GAP) {
-            endGame();
-            return;
+          // Check if bird hits bottom pipe - with reduced hitbox
+          if (hitboxBottom > pipe.topHeight + PIPE_GAP) {
+            collision = true;
+            break;
           }
         }
+      }
+      
+      if (collision) {
+        endGame();
+        return;
       }
       
       animationRef.current = requestAnimationFrame(gameLoop);

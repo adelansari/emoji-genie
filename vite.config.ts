@@ -10,7 +10,6 @@ export default defineConfig({
     tailwindcss(),
     svgr({
       svgrOptions: {
-        svgo: true,
         // Ensure fill attributes are not removed
         plugins: ['@svgr/plugin-svgo', '@svgr/plugin-jsx'],
         // Prevent replacing attributes with currentColor
@@ -20,4 +19,29 @@ export default defineConfig({
       exclude: "",
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Group React framework code together
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') || 
+              id.includes('node_modules/scheduler')) {
+            return 'react-vendor';
+          }
+          
+          // Group Konva related packages
+          if (id.includes('node_modules/konva') || 
+              id.includes('node_modules/react-konva')) {
+            return 'konva-vendor';
+          }
+          
+          // Group other third-party libraries
+          if (id.includes('node_modules')) {
+            return 'vendors';
+          }
+        }
+      }
+    }
+  },
 })
