@@ -228,11 +228,14 @@ const FlappyGame = () => {
   const renderCharacter = () => {
     // If we have a custom character image from export, use that
     if (characterImage) {
+      const width = BIRD_SIZE;
+      const aspectRatio = characterImage.height / characterImage.width;
+      const height = width * aspectRatio;
       return (
         <Image
           image={characterImage}
-          width={BIRD_SIZE}
-          height={BIRD_SIZE}
+          width={width}
+          height={height}
         />
       );
     }
