@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import { useGame } from '../../context/GameContext';
-// Remove unused import
-// import { useEmojiCustomization } from '../../context/EmojiCustomizationContext';
 import { Stage, Layer, Rect, Text, Group, Circle, Image } from 'react-konva';
 import Konva from 'konva'; // Import Konva namespace
 
-// Improve physics constants to match Flappy Bird feel
-const GRAVITY = 0.5;
-const FLAP_STRENGTH = -8;
+// Restore original physics constants to match the earlier implementation
+const GRAVITY = 0.25;
+const FLAP_STRENGTH = -7;
 const PIPE_WIDTH = 60;
-const BIRD_SIZE_BASE = 35; // Base size, will scale with canvas
+const BIRD_SIZE_BASE = 40; // Base size, will scale with canvas
 
 // Function to calculate responsive size (similar to other canvases, maybe slightly different constraints)
 const getResponsiveCanvasSize = () => {
@@ -40,9 +38,6 @@ const FlappyGame = () => {
     characterImageUrl, 
     emojiType 
   } = useGame();
-  
-  // Remove unused context hook
-  // const { resetAllTransforms } = useEmojiCustomization(); // Get reset function
   
   const stageRef = useRef<Konva.Stage>(null);
   const animationRef = useRef<number | null>(null);
@@ -134,49 +129,46 @@ const FlappyGame = () => {
     if (!isPlaying) return;
 
     const gameLoop = (timestamp: number) => {
-      if (lastTimeRef.current === 0) {
+      // Calculate delta time based on original implementation
+      if (!lastTimeRef.current) {
         lastTimeRef.current = timestamp;
-        animationRef.current = requestAnimationFrame(gameLoop);
-        return;
       }
-      
-      const deltaTime = (timestamp - lastTimeRef.current) / 16.67; // Normalize based on 60 FPS
+      // Simple delta time calculation without normalization
       lastTimeRef.current = timestamp;
       
-      // Update bird position
-      const newVelocity = birdVelocity + GRAVITY * deltaTime; // Apply delta time
+      // Update bird position - apply gravity directly like in original
+      const newVelocity = birdVelocity + GRAVITY;
       const newPosition = {
         x: birdPosition.x,
-        y: birdPosition.y + newVelocity * deltaTime // Apply delta time
+        y: birdPosition.y + newVelocity
       };
       
       setBirdVelocity(newVelocity);
       setBirdPosition(newPosition);
       
-      // Check boundaries (use dynamic height and birdSize)
-      // Allow hitting the ground (y > canvasHeight - groundHeight - birdSize/2)
-      const groundHeight = canvasSize.height * 0.1; // Assuming ground is 10%
-      if (newPosition.y < birdSize / 2 || newPosition.y > canvasSize.height - groundHeight - birdSize / 2) {
+      // Check boundaries using simpler calculation like original
+      const groundHeight = canvasSize.height * 0.1;
+      if (newPosition.y < 0 || newPosition.y > canvasSize.height - groundHeight) {
         endGame();
         return;
       }
       
-      // Update pipes
+      // Update pipes - simple movement without delta time scaling
       let shouldAddNewPipe = false;
       let updatedPipes = pipes.map(pipe => {
-        const newX = pipe.x - gameSpeed * deltaTime; // Apply delta time to pipe movement
+        const newX = pipe.x - gameSpeed;
         
         // Check if bird passed the pipe
-        if (!pipe.passed && newX + PIPE_WIDTH < birdPosition.x - birdSize / 2) { // Check based on bird's left edge
+        if (!pipe.passed && newX + PIPE_WIDTH < birdPosition.x) {
           incrementScore();
           return { ...pipe, x: newX, passed: true };
         }
         
         return { ...pipe, x: newX };
-      }).filter(pipe => pipe.x > -PIPE_WIDTH); // Remove pipes fully off-screen
+      }).filter(pipe => pipe.x > -PIPE_WIDTH);
       
-      // Check if we need to add a new pipe (adjust distance based on width)
-      const pipeSpacing = canvasSize.width * 0.6; // Add pipe when last one is 60% across
+      // Check if we need to add a new pipe
+      const pipeSpacing = canvasSize.width * 0.6;
       if (updatedPipes.length === 0 || updatedPipes[updatedPipes.length - 1].x < canvasSize.width - pipeSpacing) {
         shouldAddNewPipe = true;
       }
@@ -187,14 +179,14 @@ const FlappyGame = () => {
       
       setPipes(updatedPipes);
       
-      // Check for collision with pipes (use dynamic sizes)
+      // Check for collision with pipes using simpler hitbox calculation
       const birdLeftEdge = birdPosition.x - birdSize / 2;
       const birdRightEdge = birdPosition.x + birdSize / 2;
       const birdTopEdge = birdPosition.y - birdSize / 2;
       const birdBottomEdge = birdPosition.y + birdSize / 2;
       
-      // Adjust hitbox reduction based on dynamic birdSize
-      const hitboxReduction = birdSize * 0.15; // Slightly smaller reduction (more generous hitbox)
+      // Add a smaller hit area for better gameplay (80% of the bird size)
+      const hitboxReduction = birdSize * 0.2;
       const hitboxLeft = birdLeftEdge + hitboxReduction;
       const hitboxRight = birdRightEdge - hitboxReduction;
       const hitboxTop = birdTopEdge + hitboxReduction;
@@ -211,7 +203,7 @@ const FlappyGame = () => {
             collision = true;
             break;
           }
-          // Check bottom pipe collision (use stored pipe.gap)
+          // Check bottom pipe collision
           if (hitboxBottom > pipe.topHeight + pipe.gap) {
             collision = true;
             break;
@@ -236,8 +228,7 @@ const FlappyGame = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-    // Add canvasSize to dependencies as game logic depends on it
-  }, [birdPosition, birdVelocity, pipes, isPlaying, gameSpeed, createPipe, incrementScore, canvasSize, birdSize, endGame, pipeGap]); 
+  }, [birdPosition, birdVelocity, pipes, isPlaying, gameSpeed, createPipe, incrementScore, canvasSize, birdSize, endGame, pipeGap]);
   
   // Reset game state (uses canvasSize in initial position)
   useEffect(() => {

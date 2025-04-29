@@ -40,7 +40,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
-  const [gameSpeed, setGameSpeed] = useState(3);
+  // Initialize with Normal difficulty (3.5)
+  const [gameSpeed, setGameSpeed] = useState(3.5);
   const [gameOver, setGameOver] = useState(false);
   const [characterImageUrl, setCharacterImageUrl] = useState<string | null>(null);
   
