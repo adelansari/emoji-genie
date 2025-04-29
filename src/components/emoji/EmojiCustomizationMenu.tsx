@@ -206,6 +206,20 @@ export default function EmojiCustomizationMenu() {
       
       {/* --- Desktop Edit Controls --- */}
       <div className="hidden md:block"> {/* Hide on mobile, show on medium+ */} 
+        {/* Add header to match mobile drawer experience and sticker component */}
+        <div className="mb-3 px-2 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-yellow-300">
+            Adjust {formatPartName(selectedEmojiPart)}
+          </h3>
+          <button
+            onClick={() => setMode("none")}
+            className="p-1 text-gray-400 hover:text-white opacity-70 hover:opacity-100"
+            title="Clear selection"
+          >
+            {mode !== "none" && <X size={16} />}
+          </button>
+        </div>
+
         {/* Make edit mode buttons responsive: 2 columns on small, 4 on medium+ */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {editModes.map((editMode) => {
@@ -234,8 +248,8 @@ export default function EmojiCustomizationMenu() {
           })}
         </div>
         
-        {/* Container for edit controls */}
-        <div className="mt-4 min-h-[200px]"> 
+        {/* Container for edit controls with improved styling */}
+        <div className="mt-4 bg-gray-800/50 p-3 rounded-md border border-gray-700/30 min-h-[200px]"> 
           {renderEditControl()}
         </div>
       </div>
