@@ -264,7 +264,9 @@ export default function EmojiCustomizationMenu() {
         >
           {/* Drawer Header */}
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold text-indigo-300">Adjust {formatPartName(selectedEmojiPart)}</h3>
+            <h3 className="text-lg font-semibold text-indigo-300">
+              Adjust {formatPartName(selectedEmojiPart)}
+            </h3>
             <button onClick={handleCloseDrawer} className="p-1 text-gray-400 hover:text-white">
               <X size={20} />
             </button>

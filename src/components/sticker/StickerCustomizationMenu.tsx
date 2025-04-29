@@ -281,7 +281,10 @@ export default function StickerCustomizationMenu() {
         >
           {/* Drawer Header */}
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold text-indigo-300">Adjust {formatName(selectedStickerPart)}</h3>
+            <h3 className="text-lg font-semibold text-indigo-300">
+              Adjust {formatName(selectedStickerSubcategory)}
+              {selectedStickerSubcategory !== 'default' && ` (${formatName(selectedStickerPart)})`}
+            </h3>
             <button onClick={handleCloseDrawer} className="p-1 text-gray-400 hover:text-white">
               <X size={20} />
             </button>
