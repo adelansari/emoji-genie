@@ -71,7 +71,7 @@ interface EmojiCustomizationProviderProps {
 }
 
 export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProps> = ({ children }) => {
-    const [emojiType, _setEmojiType] = useState<EmojiType>("emoji");
+    const [emojiType, _setEmojiType] = useState<EmojiType>("sticker");
     
     // Emoji mode states
     const [selectedEmojiPart, _setSelectedEmojiPart] = useState<EmojiPartType>('head');
