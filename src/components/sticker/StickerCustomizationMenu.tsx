@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"; 
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
-// Import types and data from correct source
 import { StickerPartType, StickerSubcategoryType, subcategories as stickerSubcategories } from '../../data/sticker/stickerModels'; 
 import StickerModelGallery from "./StickerModelGallery";
 import JoystickController from "../shared/JoystickController";
@@ -9,7 +8,7 @@ import RotationJoystick from "../shared/RotationJoystick";
 import ColorPicker from "../shared/ColorPicker";
 import { useGame } from "../../context/GameContext";
 import { exportElementAsImage, saveImageToLocalStorage, downloadImage } from "../../utils/exportUtils";
-import { Save, ExternalLink, Download } from "lucide-react";
+import { Save, Download, SlidersHorizontal, X } from "lucide-react"; 
 
 // Constants
 const CHARACTER_IMAGE_KEY = 'flappyStickerCharacter'; // Use a different key for sticker
@@ -44,9 +43,10 @@ export default function StickerCustomizationMenu() {
   const [mode, setMode] = useState<EditMode>("none");
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle');
-
-  // State for canvas size to pass to joystick
   const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
+
+  // State for the adjustment drawer visibility
+  const [isAdjustDrawerOpen, setIsAdjustDrawerOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -66,12 +66,12 @@ export default function StickerCustomizationMenu() {
   // Reset subcategory when part changes
   useEffect(() => {
     if (currentSubcategories.length > 0) {
-      // Use StickerSubcategoryType for the parameter
       setSelectedStickerSubcategory(currentSubcategories[0] as StickerSubcategoryType);
     } else {
-      setSelectedStickerSubcategory('default'); // Fallback if no subcategories
+      setSelectedStickerSubcategory('default');
     }
     setMode('none'); // Reset edit mode when part changes
+    setIsAdjustDrawerOpen(false); // Close drawer when part changes
   }, [selectedStickerPart, currentSubcategories, setSelectedStickerSubcategory]);
 
   const renderEditControl = () => {
@@ -140,8 +140,8 @@ export default function StickerCustomizationMenu() {
   };
 
   return (
-    // Make width responsive: full width on small, fixed on medium+
-    <div className="flex-shrink-0 w-full md:w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-4 flex flex-col gap-4 text-white">
+    // Adjusted padding for mobile, maintain overall structure
+    <div className="relative flex-shrink-0 w-full md:w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-3 md:p-4 flex flex-col gap-3 md:gap-4 text-white">
       {/* Part selection tabs */}
       <nav className="bg-gray-900/50 rounded-md p-1">
         <ul className="flex justify-around gap-1">
@@ -187,32 +187,47 @@ export default function StickerCustomizationMenu() {
         <StickerModelGallery />
       </div>
 
-      {/* Make edit mode buttons responsive: 2 columns on small, 4 on medium+ */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {editModes.map((editMode) => {
-          const isActive = mode === editMode;
-          return (
-            <button
-              key={editMode}
-              onClick={() => setMode(current => (current === editMode ? "none" : editMode))}
-              className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize ${isActive
-                  ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
-                  : "bg-gray-700/60 hover:bg-gray-600/80"
-                }`}
-            >
-              {editMode}
-            </button>
-          );
-        })}
+      {/* --- Desktop Edit Controls --- */} 
+      {/* Hidden on small screens, shown on medium+ */}
+      <div className="hidden md:flex flex-col gap-3">
+        {/* Edit mode buttons grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {editModes.map((editMode) => {
+            const isActive = mode === editMode;
+            return (
+              <button
+                key={editMode}
+                onClick={() => setMode(current => (current === editMode ? "none" : editMode))}
+                className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize ${isActive
+                    ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
+                    : "bg-gray-700/60 hover:bg-gray-600/80"
+                  }`}
+              >
+                {editMode}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Container for edit controls */}
+        <div className="min-h-[200px]">
+          {renderEditControl()}
+        </div>
       </div>
 
-      {/* Container for edit controls */}
-      <div className="min-h-[200px]">
-        {renderEditControl()}
+      {/* --- Mobile "Adjust" Button --- */} 
+      {/* Shown only on small screens (block) */}
+      <div className="md:hidden mt-2">
+        <button 
+          onClick={() => setIsAdjustDrawerOpen(true)}
+          className="w-full py-3 px-4 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-150 bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+        >
+          <SlidersHorizontal size={16} /> Adjust Properties
+        </button>
       </div>
 
-      {/* Action buttons */}
-      <div className="mt-2 grid grid-cols-2 gap-3">
+      {/* Action buttons (Export/Download) - Always visible at the bottom */}
+      <div className="mt-auto pt-3 md:pt-2 grid grid-cols-2 gap-3">
         {/* Export to Game button */}
         <button
           onClick={handleExportToGame}
@@ -252,6 +267,53 @@ export default function StickerCustomizationMenu() {
           {downloadStatus === 'success' && 'Downloaded!'}
           {downloadStatus === 'error' && 'Download Failed'}
         </button>
+      </div>
+
+      {/* --- Mobile Adjustment Drawer --- */} 
+      {/* Conditionally rendered overlay drawer */}
+      {isAdjustDrawerOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden" 
+          onClick={() => setIsAdjustDrawerOpen(false)} // Close on overlay click
+        ></div>
+      )}
+      <div 
+        className={`fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 shadow-lg p-4 z-50 transform transition-transform duration-300 ease-in-out md:hidden 
+          ${isAdjustDrawerOpen ? 'translate-y-0' : 'translate-y-full'}
+        `}
+      >
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold text-yellow-300">Adjust Properties</h3>
+          <button 
+            onClick={() => setIsAdjustDrawerOpen(false)}
+            className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        {/* Edit mode buttons grid (inside drawer) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          {editModes.map((editMode) => {
+            const isActive = mode === editMode;
+            return (
+              <button
+                key={editMode}
+                onClick={() => setMode(current => (current === editMode ? "none" : editMode))}
+                className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize ${isActive
+                    ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
+                    : "bg-gray-700/60 hover:bg-gray-600/80"
+                  }`}
+              >
+                {editMode}
+              </button>
+            );
+          })}
+        </div>
+        
+        {/* Container for edit controls (inside drawer) */}
+        <div className="min-h-[200px]"> 
+          {renderEditControl()}
+        </div>
       </div>
     </div>
   );
