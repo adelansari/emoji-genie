@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; 
+import { useState, useEffect, useRef } from "react"; 
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 import { StickerPartType, StickerSubcategoryType, subcategories as stickerSubcategories } from '../../data/sticker/stickerModels'; 
 import StickerModelGallery from "./StickerModelGallery";
@@ -46,7 +46,9 @@ export default function StickerCustomizationMenu() {
 
   // State for canvas size to pass to joystick
   const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
-  const [isAdjustDrawerOpen, setIsAdjustDrawerOpen] = useState(false); // State for drawer
+  const [isAdjustDrawerOpen, setIsAdjustDrawerOpen] = useState(false);
+  const [drawerAnimation, setDrawerAnimation] = useState<'entering' | 'entered' | 'exiting' | 'exited'>('exited');
+  const drawerTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -54,7 +56,10 @@ export default function StickerCustomizationMenu() {
     };
     window.addEventListener('resize', handleResize);
     handleResize(); // Initial call
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (drawerTimeoutRef.current) clearTimeout(drawerTimeoutRef.current);
+    };
   }, []);
 
   // Define sticker-specific parts
@@ -72,8 +77,41 @@ export default function StickerCustomizationMenu() {
       setSelectedStickerSubcategory('default'); // Fallback if no subcategories
     }
     setMode('none'); // Reset edit mode when part changes
-    setIsAdjustDrawerOpen(false); // Close drawer on part change
+    
+    // Close drawer on part change with animation
+    if (isAdjustDrawerOpen) {
+      handleCloseDrawer();
+    }
   }, [selectedStickerPart, currentSubcategories, setSelectedStickerSubcategory]);
+
+  // Handle opening drawer with animation
+  const handleOpenDrawer = () => {
+    // First set it to exited state with translateY(100%)
+    setDrawerAnimation('exited');
+    setIsAdjustDrawerOpen(true);
+    
+    // Force a DOM reflow to ensure the initial position is applied
+    // before starting the animation
+    setTimeout(() => {
+      setDrawerAnimation('entering');
+      
+      // After animation completes, mark as fully entered
+      drawerTimeoutRef.current = window.setTimeout(() => {
+        setDrawerAnimation('entered');
+      }, 300);
+    }, 10);
+  };
+
+  // Handle closing drawer with animation
+  const handleCloseDrawer = () => {
+    setDrawerAnimation('exiting');
+    
+    // After animation completes, actually remove from DOM
+    drawerTimeoutRef.current = window.setTimeout(() => {
+      setIsAdjustDrawerOpen(false);
+      setDrawerAnimation('exited');
+    }, 300); // Match this to the CSS transition duration
+  };
 
   const renderEditControl = () => {
     switch (mode) {
@@ -146,7 +184,7 @@ export default function StickerCustomizationMenu() {
   };
 
   return (
-    <div className="flex-shrink-0 w-full md:w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-4 flex flex-col gap-4 text-white relative md:static"> {/* Make relative for drawer positioning on mobile */}
+    <div className="flex-shrink-0 w-full md:w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-4 flex flex-col gap-4 text-white relative md:static"> 
       {/* Part selection tabs */}
       <nav className="bg-gray-900/50 rounded-md p-1">
         <ul className="flex justify-around gap-1">
@@ -222,7 +260,7 @@ export default function StickerCustomizationMenu() {
       {/* --- Mobile "Adjust" Button --- */}
       <div className="md:hidden flex justify-center mt-2"> {/* Show only on mobile */} 
         <button 
-          onClick={() => setIsAdjustDrawerOpen(true)}
+          onClick={handleOpenDrawer}
           className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-md text-white font-medium flex items-center justify-center gap-2 shadow-md"
         >
           <SlidersHorizontal size={18} />
@@ -233,14 +271,18 @@ export default function StickerCustomizationMenu() {
       {/* --- Mobile Adjust Drawer --- */}
       {isAdjustDrawerOpen && (
         <div 
-          className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-gray-800/95 backdrop-blur-sm border-t border-gray-700 rounded-t-lg shadow-2xl p-4 flex flex-col gap-4 
-                     transform transition-transform duration-300 ease-out" // Basic transition
-          style={{ transform: 'translateY(0)' }} // Start visible
+          className={`md:hidden fixed inset-x-0 bottom-0 z-50 bg-gray-800/95 backdrop-blur-sm border-t border-gray-700 rounded-t-lg shadow-2xl p-4 flex flex-col gap-4 
+                     transform transition-transform duration-300 ease-out`}
+          style={{ 
+            transform: drawerAnimation === 'entering' || drawerAnimation === 'entered' 
+              ? 'translateY(0)' 
+              : 'translateY(100%)'
+          }}
         >
           {/* Drawer Header */}
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold text-indigo-300">Adjust {formatName(selectedStickerPart)}</h3>
-            <button onClick={() => setIsAdjustDrawerOpen(false)} className="p-1 text-gray-400 hover:text-white">
+            <button onClick={handleCloseDrawer} className="p-1 text-gray-400 hover:text-white">
               <X size={20} />
             </button>
           </div>

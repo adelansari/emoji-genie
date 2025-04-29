@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; 
+import { useState, useEffect, useRef } from "react"; 
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 import { EmojiPartType } from '../../data/emoji/emojiModels'; 
 import EmojiModelGallery from "./EmojiModelGallery";
@@ -41,7 +41,9 @@ export default function EmojiCustomizationMenu() {
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle');
   // State for canvas size to pass to joystick
   const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
-  const [isAdjustDrawerOpen, setIsAdjustDrawerOpen] = useState(false); // State for drawer
+  const [isAdjustDrawerOpen, setIsAdjustDrawerOpen] = useState(false);
+  const [drawerAnimation, setDrawerAnimation] = useState<'entering' | 'entered' | 'exiting' | 'exited'>('exited');
+  const drawerTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -49,7 +51,10 @@ export default function EmojiCustomizationMenu() {
     };
     window.addEventListener('resize', handleResize);
     handleResize(); // Initial call
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (drawerTimeoutRef.current) clearTimeout(drawerTimeoutRef.current);
+    };
   }, []);
 
 
@@ -58,9 +63,42 @@ export default function EmojiCustomizationMenu() {
   
   // Close drawer when switching parts
   useEffect(() => {
-    setIsAdjustDrawerOpen(false);
-    setMode('none'); // Also reset mode when part changes
+    setMode('none'); // Reset mode when part changes
+    
+    // Close drawer on part change with animation
+    if (isAdjustDrawerOpen) {
+      handleCloseDrawer();
+    }
   }, [selectedEmojiPart]);
+
+  // Handle opening drawer with animation
+  const handleOpenDrawer = () => {
+    // First set it to exited state with translateY(100%)
+    setDrawerAnimation('exited');
+    setIsAdjustDrawerOpen(true);
+    
+    // Force a DOM reflow to ensure the initial position is applied
+    // before starting the animation
+    setTimeout(() => {
+      setDrawerAnimation('entering');
+      
+      // After animation completes, mark as fully entered
+      drawerTimeoutRef.current = window.setTimeout(() => {
+        setDrawerAnimation('entered');
+      }, 300);
+    }, 10);
+  };
+
+  // Handle closing drawer with animation
+  const handleCloseDrawer = () => {
+    setDrawerAnimation('exiting');
+    
+    // After animation completes, actually remove from DOM
+    drawerTimeoutRef.current = window.setTimeout(() => {
+      setIsAdjustDrawerOpen(false);
+      setDrawerAnimation('exited');
+    }, 300); // Match this to the CSS transition duration
+  };
 
   const renderEditControl = () => {
     switch (mode) {
@@ -205,7 +243,7 @@ export default function EmojiCustomizationMenu() {
       {/* --- Mobile "Adjust" Button --- */}
       <div className="md:hidden flex justify-center mt-2"> {/* Show only on mobile */} 
         <button 
-          onClick={() => setIsAdjustDrawerOpen(true)}
+          onClick={handleOpenDrawer}
           className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-md text-white font-medium flex items-center justify-center gap-2 shadow-md"
         >
           <SlidersHorizontal size={18} />
@@ -217,13 +255,17 @@ export default function EmojiCustomizationMenu() {
       {isAdjustDrawerOpen && (
         <div 
           className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-gray-800/95 backdrop-blur-sm border-t border-gray-700 rounded-t-lg shadow-2xl p-4 flex flex-col gap-4 
-                     transform transition-transform duration-300 ease-out" // Basic transition
-          style={{ transform: 'translateY(0)' }} // Start visible (could animate from translateY(100%))
+                     transform transition-transform duration-300 ease-out" 
+          style={{ 
+            transform: drawerAnimation === 'entering' || drawerAnimation === 'entered' 
+              ? 'translateY(0)' 
+              : 'translateY(100%)'
+          }}
         >
           {/* Drawer Header */}
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold text-indigo-300">Adjust {formatPartName(selectedEmojiPart)}</h3>
-            <button onClick={() => setIsAdjustDrawerOpen(false)} className="p-1 text-gray-400 hover:text-white">
+            <button onClick={handleCloseDrawer} className="p-1 text-gray-400 hover:text-white">
               <X size={20} />
             </button>
           </div>
@@ -237,7 +279,6 @@ export default function EmojiCustomizationMenu() {
               return (
                 <button
                   key={editMode}
-                  // Toggle logic: if clicking active, set to none, else set to clicked mode
                   onClick={() => handleSelectMode(editMode)} // Use shared handler
                   disabled={isDisabled}
                   className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize 
@@ -247,7 +288,6 @@ export default function EmojiCustomizationMenu() {
                         ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                         : "bg-gray-700/60 hover:bg-gray-600/80"
                     }`}
-                  // Add title for disabled color button
                   title={isDisabled ? "Color cannot be changed for the base head" : undefined}
                 >
                   {editMode}
