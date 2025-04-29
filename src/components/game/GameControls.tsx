@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useGame } from '../../context/GameContext';
 import { useEmojiCustomization } from '../../context/EmojiCustomizationContext';
+import { Play, RotateCcw, HelpCircle } from 'lucide-react'; // Import icons
 
 const GameControls = () => {
   const { 
     isPlaying,
     gameOver,
+    score,
     highScore,
     gameSpeed,
+    startGame,
     resetGame,
     setGameSpeed
   } = useGame();
@@ -16,12 +19,22 @@ const GameControls = () => {
   
   const [showInstructions, setShowInstructions] = useState(false);
   
-  // Speed options
+  // Improved speed options to match classic Flappy Bird feel
   const speedOptions = [
     { value: 2, label: 'Easy' },
-    { value: 3, label: 'Normal' },
-    { value: 4.5, label: 'Hard' }
+    { value: 3.5, label: 'Normal' },
+    { value: 5, label: 'Hard' }
   ];
+  
+  // Handle play/restart button click
+  const handlePlayClick = () => {
+    if (gameOver) {
+      resetGame();
+      setTimeout(() => startGame(), 50); // Small delay to ensure reset completes
+    } else if (!isPlaying) {
+      startGame();
+    }
+  };
   
   return (
     <div className="flex-shrink-0 w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-4 flex flex-col gap-4 text-white">
@@ -39,7 +52,7 @@ const GameControls = () => {
         <p className="text-sm mt-1 text-gray-400">
           {!isPlaying && !gameOver && 'Click "Play" or press Space to start'}
           {isPlaying && 'Click or press Space to flap'}
-          {gameOver && 'Try again!'}
+          {gameOver && `Your score: ${score}`}
         </p>
       </div>
       
@@ -84,27 +97,45 @@ const GameControls = () => {
         )}
       </div>
       
-      {/* Actions */}
-      <div className="flex gap-3">
+      {/* Main action buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Play/Restart button */}
         <button
-          onClick={() => setShowInstructions(!showInstructions)}
-          className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-        >
-          {showInstructions ? 'Hide Instructions' : 'Show Instructions'}
-        </button>
-        
-        <button
-          onClick={resetGame}
-          disabled={isPlaying && !gameOver}
-          className={`flex-1 py-2 px-4 rounded-md transition-colors ${
-            isPlaying && !gameOver
+          onClick={handlePlayClick}
+          disabled={isPlaying}
+          className={`py-3 rounded-md transition-colors flex items-center justify-center gap-2 ${
+            isPlaying
               ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-              : "bg-red-600 hover:bg-red-700 text-white"
+              : "bg-green-600 hover:bg-green-700 text-white"
           }`}
         >
-          {isPlaying ? 'Forfeit Game' : 'Reset'}
+          <Play size={18} />
+          {gameOver ? 'Play Again' : 'Play'}
+        </button>
+        
+        {/* Reset button - only enabled when not playing */}
+        <button
+          onClick={resetGame}
+          disabled={isPlaying}
+          className={`py-3 rounded-md transition-colors flex items-center justify-center gap-2 ${
+            isPlaying
+              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 text-white"
+          }`}
+        >
+          <RotateCcw size={18} />
+          Reset
         </button>
       </div>
+      
+      {/* Instructions button - separated from main actions */}
+      <button
+        onClick={() => setShowInstructions(!showInstructions)}
+        className="py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+      >
+        <HelpCircle size={18} />
+        {showInstructions ? 'Hide Instructions' : 'How to Play'}
+      </button>
       
       {/* Instructions panel */}
       {showInstructions && (

@@ -5,11 +5,11 @@ import { useGame } from '../../context/GameContext';
 import { Stage, Layer, Rect, Text, Group, Circle, Image } from 'react-konva';
 import Konva from 'konva'; // Import Konva namespace
 
-// Reduce gravity and increase flap strength for better gameplay
-const GRAVITY = 0.25;
-const FLAP_STRENGTH = -6; // Keep flap strength consistent
-const PIPE_WIDTH = 80;
-const BIRD_SIZE_BASE = 40; // Base size, will scale with canvas
+// Improve physics constants to match Flappy Bird feel
+const GRAVITY = 0.5;
+const FLAP_STRENGTH = -8;
+const PIPE_WIDTH = 60;
+const BIRD_SIZE_BASE = 35; // Base size, will scale with canvas
 
 // Function to calculate responsive size (similar to other canvases, maybe slightly different constraints)
 const getResponsiveCanvasSize = () => {

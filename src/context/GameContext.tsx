@@ -93,6 +93,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setIsPlaying(false);
     setGameOver(false);
     setScore(0);
+    // Reset back to normal speed if user was on a different difficulty
+    if (gameSpeed !== 3.5) {
+      setGameSpeed(3.5);
+    }
   };
 
   const incrementScore = () => {
