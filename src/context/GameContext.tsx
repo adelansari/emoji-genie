@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { useEmojiCustomization } from './EmojiCustomizationContext';
+import { useEmojiCustomization, EmojiType } from './EmojiCustomizationContext'; // Import EmojiType
 import { loadImageFromLocalStorage } from '../utils/exportUtils';
 
 interface GameContextType {
@@ -9,6 +9,7 @@ interface GameContextType {
   gameSpeed: number;
   gameOver: boolean;
   characterImageUrl: string | null;
+  emojiType: EmojiType; // Add emojiType here
   startGame: () => void;
   endGame: () => void;
   incrementScore: () => void;
@@ -105,6 +106,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     gameSpeed,
     gameOver,
     characterImageUrl,
+    emojiType, // Expose emojiType
     startGame,
     endGame,
     incrementScore,
