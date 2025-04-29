@@ -12,8 +12,10 @@ interface Transform {
     color: string;
 }
 
+// Use relative positioning (0.5, 0.5) for the center instead of fixed values
+// The actual pixel values will be calculated in the canvas components
 const defaultTransform: Transform = {
-    position: { x: 300, y: 300 },
+    position: { x: 0.5, y: 0.5 }, // Center position as a ratio (0.5, 0.5 = center)
     rotation: 0,
     size: { x: 200, y: 200 },
     color: "#FFFFFF" 
@@ -89,7 +91,7 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     // Initialize with the proper structure for all subcategories
     const [selectedStickerModels, _setSelectedStickerModels] = useState<Record<StickerPartType, Record<StickerSubcategoryType, ModelIdType | null>>>({
         face: {
-            shape: 'shape01',
+            shape: 'shape01', // Keep the face shape as default
             mouth: null,
             eyeShape: null,
             eyebrows: null,
@@ -98,8 +100,8 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         eyes: {
             shape: null,
             mouth: null,
-            eyeShape: 'eyeShape01',
-            eyebrows: 'eyebrows01',
+            eyeShape: null, // Changed from 'eyeShape01' to null
+            eyebrows: null, // Changed from 'eyebrows01' to null
             default: null
         },
         hair: {
@@ -107,14 +109,14 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
             mouth: null,
             eyeShape: null,
             eyebrows: null,
-            default: 'hair01'
+            default: null  // Changed from 'hair01' to null
         },
         others: {
             shape: null,
             mouth: null,
             eyeShape: null,
             eyebrows: null,
-            default: 'accessory01'
+            default: null  // Changed from 'accessory01' to null
         }
     });
     
