@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, memo, useEffect } from "react";
 import { Stage, Layer, Circle } from "react-konva";
-import Konva from 'konva'; // Import Konva namespace
+import Konva from 'konva'; 
 import { RotateCcw } from "lucide-react";
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 
@@ -17,24 +17,30 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
   const controlRadius = 80;
   const indicatorRadius = 10;
 
-  // Element size assumption for clamping (can be made dynamic if needed)
-  const elementSize = 100; 
+  // Convert position from relative (0-1) to pixel coordinates for UI display
+  const absolutePosition = {
+    x: position.x * canvasSize,
+    y: position.y * canvasSize
+  };
 
   // Calculate initial indicator position based on current position and canvasSize
-  const calculateIndicatorPos = useCallback((currentPos: { x: number; y: number }) => {
+  const calculateIndicatorPos = useCallback((pos: { x: number; y: number }) => {
+    // First convert the position from relative (0-1) to pixels
+    const pixelPos = { 
+      x: pos.x * canvasSize,
+      y: pos.y * canvasSize 
+    };
+    
     // Map canvas position (relative to center) to joystick position (relative to center)
     const canvasCenterX = canvasSize / 2;
     const canvasCenterY = canvasSize / 2;
-    const relativePosX = (currentPos.x - canvasCenterX) / canvasCenterX; // Range -1 to 1
-    const relativePosY = (currentPos.y - canvasCenterY) / canvasCenterY; // Range -1 to 1
+    const relativePosX = (pixelPos.x - canvasCenterX) / canvasCenterX; // Range -1 to 1
+    const relativePosY = (pixelPos.y - canvasCenterY) / canvasCenterY; // Range -1 to 1
     
-    // Clamp relative position in case canvas size changed drastically
-    const clampedRelativeX = Math.max(-1, Math.min(1, relativePosX));
-    const clampedRelativeY = Math.max(-1, Math.min(1, relativePosY));
-
+    // Scale to fit within joystick control radius
     return {
-      x: center.x + clampedRelativeX * controlRadius,
-      y: center.y + clampedRelativeY * controlRadius,
+      x: center.x + (relativePosX * controlRadius),
+      y: center.y + (relativePosY * controlRadius),
     };
   }, [canvasSize, center.x, center.y, controlRadius]);
 
@@ -53,31 +59,25 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
     const dx = indicatorX - center.x; // Joystick delta
     const dy = indicatorY - center.y; // Joystick delta
 
-    // Map joystick delta (-controlRadius to +controlRadius) to canvas delta
+    // Map joystick delta (-controlRadius to +controlRadius) to canvas position
     const relativeX = dx / controlRadius; // Range -1 to 1
     const relativeY = dy / controlRadius; // Range -1 to 1
 
-    const canvasCenterX = canvasSize / 2;
-    const canvasCenterY = canvasSize / 2;
+    // Convert to relative position values (0-1) instead of absolute pixels
+    const newPosX = 0.5 + (relativeX * 0.5); // Center is 0.5, range is 0-1
+    const newPosY = 0.5 + (relativeY * 0.5); // Center is 0.5, range is 0-1
 
-    // Calculate target position on canvas
-    const targetX = canvasCenterX + relativeX * canvasCenterX;
-    const targetY = canvasCenterY + relativeY * canvasCenterY;
-
-    // Clamp position within canvas bounds (considering element size)
-    // Use a small buffer or assume element center is the position
-    const buffer = 0; // Or elementSize / 2 if position is top-left
-    const clampedX = Math.max(buffer, Math.min(canvasSize - buffer, targetX));
-    const clampedY = Math.max(buffer, Math.min(canvasSize - buffer, targetY));
+    // Clamp the values to ensure they stay within 0-1
+    const clampedX = Math.max(0, Math.min(1, newPosX));
+    const clampedY = Math.max(0, Math.min(1, newPosY));
 
     setPosition({ x: clampedX, y: clampedY });
-  }, [setPosition, center.x, center.y, controlRadius, canvasSize]); // Add canvasSize dependency
+  }, [setPosition, center.x, center.y, controlRadius]);
 
-  // Reset handler centers the position based on current canvasSize
+  // Reset handler centers the position to the relative center (0.5, 0.5)
   const handleReset = useCallback(() => {
-    setPosition({ x: canvasSize / 2, y: canvasSize / 2 });
-    // Indicator position will update via useEffect
-  }, [setPosition, canvasSize]); // Add canvasSize dependency
+    setPosition({ x: 0.5, y: 0.5 });
+  }, [setPosition]);
 
   const handleDragMove = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
@@ -86,17 +86,15 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
     setIndicatorPosition(pos); 
     // Calculate and set the actual element position
     updateControlledPosition(pos.x, pos.y);
-    if (!isDragging) setIsDragging(true); // Set dragging state
+    if (!isDragging) setIsDragging(true);
   }, [updateControlledPosition, isDragging]);
 
   const handleDragEnd = useCallback(() => {
-    // Snap indicator back based on the final position set in context
-    setIndicatorPosition(calculateIndicatorPos(position)); 
     setIsDragging(false);
-  }, [calculateIndicatorPos, position]); // Add position dependency
+  }, []); 
 
   const dragBoundFunc = useCallback((pos: { x: number; y: number }) => {
-    // ... (dragBoundFunc remains the same, depends only on joystick geometry) ...
+    // Keep the indicator within the joystick circle boundary
     const dx = pos.x - center.x;
     const dy = pos.y - center.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -115,7 +113,6 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
 
   return (
     <div className="bg-gray-700/50 rounded-lg shadow-xl p-2 flex flex-col items-center">
-      {/* ... (header remains the same) ... */}
       <div className="w-full flex justify-between items-center mb-2 px-3">
         <h3 className="text-lg font-semibold text-yellow-300">Position</h3>
         <div className="flex items-center">
@@ -130,13 +127,11 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
         height={containerSize}
         className="bg-gray-600 rounded-full cursor-pointer"
         ref={stageRef}
-        // Add touch events along with mouse events
         onTouchStart={() => setIsDragging(true)}
-        onTouchMove={(e) => handleDragMove(e as any)} // Cast needed? Konva types might handle it
+        onTouchMove={(e) => handleDragMove(e as any)}
         onTouchEnd={handleDragEnd}
       >
         <Layer>
-          {/* ... (background circle remains the same) ... */}
           <Circle
             x={center.x}
             y={center.y}
@@ -147,8 +142,15 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
             listening={false}
           />
           <Circle
-            x={indicatorPosition.x} // Use state for indicator position
-            y={indicatorPosition.y} // Use state for indicator position
+            x={center.x}
+            y={center.y}
+            radius={2}
+            fill="white"
+            listening={false}
+          />
+          <Circle
+            x={indicatorPosition.x}
+            y={indicatorPosition.y}
             radius={indicatorRadius}
             fill={isDragging ? "rgb(251 191 36 / 0.8)" : "rgb(252 211 77 / 0.6)"}
             stroke="white"
@@ -161,13 +163,18 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
             onDragEnd={handleDragEnd}
             dragBoundFunc={dragBoundFunc}
             onDragStart={() => setIsDragging(true)}
-            // Konva automatically handles touch equivalents for draggable
           />
         </Layer>
       </Stage>
+      
+      {/* Display current position values */}
+      <div className="mt-2 text-xs text-gray-400 text-center">
+        Position: ({(position.x * 100).toFixed(0)}%, {(position.y * 100).toFixed(0)}%)
+        <br/>
+        Pixels: ({Math.round(absolutePosition.x)}, {Math.round(absolutePosition.y)})
+      </div>
     </div>
   );
 }
 
-// Need to update the export if it was memoized without props
 export default memo(JoystickController);
