@@ -3,13 +3,13 @@ import { useGame } from '../../context/GameContext';
 import { Stage, Layer, Rect, Text, Group, Circle, Image } from 'react-konva';
 import Konva from 'konva'; // Import Konva namespace
 
-// Restore original physics constants to match the earlier implementation
-const GRAVITY = 0.25;
-const FLAP_STRENGTH = -7;
+// Base physics constants
+const BASE_GRAVITY = 0.25;
+const BASE_FLAP_STRENGTH = -7;
 const PIPE_WIDTH = 60;
 const BIRD_SIZE_BASE = 40; // Base size, will scale with canvas
 
-// Function to calculate responsive size (similar to other canvases, maybe slightly different constraints)
+// Function to calculate responsive size
 const getResponsiveCanvasSize = () => {
   const padding = 32; 
   const availableWidth = window.innerWidth - padding;
@@ -44,15 +44,49 @@ const FlappyGame = () => {
   const lastTimeRef = useRef<number>(0);
   
   const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
-  const [birdPosition, setBirdPosition] = useState({ x: canvasSize.width * 0.2, y: canvasSize.height / 2 }); // Initial position relative to size
+  const [birdPosition, setBirdPosition] = useState({ x: canvasSize.width * 0.2, y: canvasSize.height / 2 });
   const [birdVelocity, setBirdVelocity] = useState(0);
-  const [pipes, setPipes] = useState<Array<{ x: number; topHeight: number; passed: boolean; gap: number }>>([]); // Add gap to pipe state
+  const [pipes, setPipes] = useState<Array<{ x: number; topHeight: number; passed: boolean; gap: number }>>([]);
   const [characterImage, setCharacterImage] = useState<HTMLImageElement | null>(null);
 
-  // Dynamic calculations based on canvasSize
-  const birdSize = useMemo(() => BIRD_SIZE_BASE * (canvasSize.width / 600), [canvasSize.width]); // Scale bird size
-  const pipeGap = useMemo(() => canvasSize.height * 0.3, [canvasSize.height]); // Scale pipe gap
+  // Dynamic calculations
+  const birdSize = useMemo(() => BIRD_SIZE_BASE * (canvasSize.width / 600), [canvasSize.width]);
+  const pipeGap = useMemo(() => canvasSize.height * 0.3, [canvasSize.height]);
+  
+  // Calculate adjusted physics constants based on difficulty level
+  const gravity = useMemo(() => {
+    if (gameSpeed <= 2.5) return BASE_GRAVITY * 0.7;
+    if (gameSpeed >= 4.5) return BASE_GRAVITY * 1.3;
+    return BASE_GRAVITY;
+  }, [gameSpeed]);
+  
+  const flapStrength = useMemo(() => {
+    if (gameSpeed <= 2.5) return BASE_FLAP_STRENGTH * 0.85;
+    if (gameSpeed >= 4.5) return BASE_FLAP_STRENGTH * 1.15;
+    return BASE_FLAP_STRENGTH;
+  }, [gameSpeed]);
 
+  // Flap function - MOVED BEFORE it's referenced
+  const flap = useCallback(() => {
+    if (!isPlaying) return;
+    setBirdVelocity(flapStrength);
+  }, [isPlaying, flapStrength]);
+  
+  // Handle canvas interaction - MOVED BEFORE it's referenced
+  const handleCanvasInteraction = useCallback(() => {
+    if (!isPlaying && !gameOver) {
+      startGame();
+      // Add immediate flap on game start for better UX
+      setTimeout(() => {
+        setBirdVelocity(flapStrength);
+      }, 10);
+    } else if (isPlaying) {
+      flap();
+    } else if (gameOver) {
+      resetGame();
+    }
+  }, [isPlaying, gameOver, startGame, resetGame, flap, flapStrength]);
+  
   // Update canvas size on resize
   useEffect(() => {
     const handleResize = () => {
@@ -63,7 +97,7 @@ const FlappyGame = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Reset bird position when canvas size changes and game not playing
+  // Reset bird position when canvas size changes
   useEffect(() => {
     if (!isPlaying && !gameOver) {
       setBirdPosition({ x: canvasSize.width * 0.2, y: canvasSize.height / 2 });
@@ -72,10 +106,11 @@ const FlappyGame = () => {
     }
   }, [canvasSize, isPlaying, gameOver]);
 
-
   // Default character color for fallback
-  const characterColor = emojiType === 'emoji' ? '#FACC15' : '#FF6B6B';
-  
+  const characterColor = useMemo(() => {
+    return emojiType === 'emoji' ? '#FACC15' : '#FF6B6B';
+  }, [emojiType]);
+
   // Load the custom character image if available
   useEffect(() => {
     if (characterImageUrl) {
@@ -91,7 +126,7 @@ const FlappyGame = () => {
     }
   }, [characterImageUrl]);
 
-  // Create a pipe at a random height, using dynamic gap
+  // Create a pipe at a random height
   const createPipe = useCallback(() => {
     const minTopHeight = canvasSize.height * 0.1; // Min 10% from top
     const maxTopHeight = canvasSize.height - pipeGap - (canvasSize.height * 0.1); // Max 10% from bottom (considering ground)
@@ -105,13 +140,17 @@ const FlappyGame = () => {
     };
   }, [canvasSize.width, canvasSize.height, pipeGap]);
 
-  // Initialize game keydown listener
+  // Initialize game keydown listener - AFTER flap function is defined
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault(); // Prevent scrolling
         if (!isPlaying && !gameOver) {
           startGame();
+          // Add immediate flap on game start with space key, matching click behavior
+          setTimeout(() => {
+            setBirdVelocity(flapStrength);
+          }, 10);
         } else if (isPlaying) {
           flap();
         } else if (gameOver) {
@@ -122,7 +161,7 @@ const FlappyGame = () => {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, gameOver, startGame, resetGame]); // Dependencies remain the same
+  }, [isPlaying, gameOver, startGame, resetGame, flap, flapStrength]); // Add flapStrength dependency
   
   // Game loop
   useEffect(() => {
@@ -137,7 +176,7 @@ const FlappyGame = () => {
       lastTimeRef.current = timestamp;
       
       // Update bird position - apply gravity directly like in original
-      const newVelocity = birdVelocity + GRAVITY;
+      const newVelocity = birdVelocity + gravity;
       const newPosition = {
         x: birdPosition.x,
         y: birdPosition.y + newVelocity
@@ -228,9 +267,9 @@ const FlappyGame = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [birdPosition, birdVelocity, pipes, isPlaying, gameSpeed, createPipe, incrementScore, canvasSize, birdSize, endGame, pipeGap]);
+  }, [birdPosition, birdVelocity, pipes, isPlaying, gameSpeed, createPipe, incrementScore, canvasSize, birdSize, endGame, pipeGap, gravity]);
   
-  // Reset game state (uses canvasSize in initial position)
+  // Reset game state
   useEffect(() => {
     if (!isPlaying && !gameOver) {
       setBirdPosition({ x: canvasSize.width * 0.2, y: canvasSize.height / 2 });
@@ -239,24 +278,7 @@ const FlappyGame = () => {
     }
   }, [isPlaying, gameOver, canvasSize]); // Add canvasSize dependency
   
-  // Flap function
-  const flap = useCallback(() => {
-    if (!isPlaying) return;
-    setBirdVelocity(FLAP_STRENGTH);
-  }, [isPlaying]); // Dependency is correct
-  
-  // Handle canvas click/touch for flapping or starting/resetting
-  const handleCanvasInteraction = useCallback(() => {
-    if (!isPlaying && !gameOver) {
-      startGame();
-    } else if (isPlaying) {
-      flap();
-    } else if (gameOver) {
-      resetGame();
-    }
-  }, [isPlaying, gameOver, startGame, resetGame, flap]); // Add flap dependency
-  
-  // Determine shape based on emoji/sticker type
+  // Render character based on emoji/sticker type
   const renderCharacter = useCallback(() => {
     const charSize = birdSize; // Use scaled bird size
     const charHalfSize = charSize / 2;
