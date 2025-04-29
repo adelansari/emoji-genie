@@ -20,7 +20,9 @@ const getResponsiveCanvasSize = () => {
 function StickerCanvas() {
   const { 
     getTransform,
-    selectedStickerModels
+    selectedStickerModels,
+    selectedStickerPart,
+    selectedStickerSubcategory
   } = useEmojiCustomization();
 
   const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
@@ -33,6 +35,9 @@ function StickerCanvas() {
     handleResize(); // Initial call
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Calculate the center of the canvas
+  const canvasCenter = canvasSize / 2;
 
   // Retrieve selected models for all categories and subcategories
   const faceModel = useMemo(() => selectedStickerModels.face?.shape ? 
@@ -59,21 +64,24 @@ function StickerCanvas() {
   const renderModelWithTransform = (part: string, subcategory: string, model: any) => {
     if (!model) return null;
     
-    // Assuming getTransform provides position relative to a conceptual center,
-    // or the joystick updates it correctly based on the current canvas size.
+    // Get the transform for this part and subcategory
     const transform = getTransform('sticker', part, subcategory as any);
+    
+    // Convert relative position (0-1) to absolute canvas position
+    const pixelX = transform.position.x * canvasSize;
+    const pixelY = transform.position.y * canvasSize;
     
     return (
       <KonvaSvgRenderer
-        key={`${part}-${subcategory}-${model.id}`} // Add key for dynamic rendering
+        key={`${part}-${subcategory}-${model.id}`}
         svgComponent={model.SvgComponent}
-        x={transform.position.x}
-        y={transform.position.y}
+        x={pixelX}
+        y={pixelY}
         rotation={transform.rotation}
         scaleX={transform.size.x / 100}
         scaleY={transform.size.y / 100}
-        // Adjust fill logic slightly if needed
-        fill={transform.color} // Use the transform color directly for simplicity, adjust specific parts if needed
+        fill={transform.color}
+        canvasSize={canvasSize}
       />
     );
   };
@@ -99,7 +107,7 @@ function StickerCanvas() {
         
         {/* Sticker parts layer */}
         <Layer>
-          {/* Render order might matter, adjust if needed (e.g., hair behind face) */}
+          {/* Render order matters - hair behind face, face before eyes, etc. */}
           {hairModel && renderModelWithTransform('hair', 'default', hairModel)}
           {faceModel && renderModelWithTransform('face', 'shape', faceModel)}
           {mouthModel && renderModelWithTransform('face', 'mouth', mouthModel)}
