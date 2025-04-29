@@ -40,14 +40,8 @@ function EmojiCanvas() {
   // For emoji mode, use the head model
   const headModel = useMemo(() => findEmojiModel('head', selectedEmojiModels.head || 'default'), [selectedEmojiModels.head]);
   
-  // Get transform for head - ensure position is relative to current canvas size
-  // Note: getTransform might need adjustment if it assumes 600px canvas
+  // Get transform for head
   const headTransform = getTransform('emoji', 'head', 'default');
-  
-  // Adjust position based on canvas size if needed, assuming default is center
-  const adjustedX = headTransform.position.x / 300 * (canvasSize / 2); // Example adjustment if default was 300,300 for 600px
-  const adjustedY = headTransform.position.y / 300 * (canvasSize / 2); // Example adjustment if default was 300,300 for 600px
-  // For simplicity, let's assume the context/joystick handles centering correctly for now.
 
   return (
     <div
@@ -73,13 +67,13 @@ function EmojiCanvas() {
           {headModel ? (
             <KonvaSvgRenderer
               svgComponent={headModel.SvgComponent}
-              // Use transform directly, assuming joystick updates based on current size
-              x={headTransform.position.x} 
-              y={headTransform.position.y}
+              x={headTransform.position.x * canvasSize}
+              y={headTransform.position.y * canvasSize}
               rotation={headTransform.rotation}
               scaleX={headTransform.size.x / 100}
               scaleY={headTransform.size.y / 100}
               fill={headModel.id === 'default' ? undefined : headTransform.color}
+              canvasSize={canvasSize}
             />
           ) : (
             <Text
