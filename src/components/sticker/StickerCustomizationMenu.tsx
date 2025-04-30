@@ -287,7 +287,7 @@ export default function StickerCustomizationMenu() {
       {/* --- Mobile Adjust Drawer --- */}
       {isAdjustDrawerOpen && (
         <div 
-          className={`md:hidden fixed inset-x-0 bottom-0 z-50 bg-gray-800/95 backdrop-blur-sm border-t border-gray-700 rounded-t-lg shadow-2xl p-4 flex flex-col gap-4 
+          className={`md:hidden fixed inset-x-0 bottom-0 z-50 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 rounded-t-lg shadow-2xl p-4 flex flex-col gap-4 
                      transform transition-transform duration-300 ease-out`}
           style={{ 
             transform: drawerAnimation === 'entering' || drawerAnimation === 'entered' 
