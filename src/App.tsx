@@ -18,8 +18,6 @@ function App() {
             Emoji Genie
           </h1>
           <div className="mb-6 flex flex-col items-center">
-            <TypeToggleSwitch className="mt-2" />
-            
             {/* Tab Navigation */}
             <div className="mt-6 bg-gray-700 rounded-full p-1 flex">
               {(['customize', 'play'] as const).map((tab) => (
@@ -36,6 +34,8 @@ function App() {
                 </button>
               ))}
             </div>
+            {/* Emoji/Sticker toggle */}
+            <TypeToggleSwitch className="mt-2" />
           </div>
           
           {/* Page Content */}
