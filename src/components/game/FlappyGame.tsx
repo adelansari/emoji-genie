@@ -3,13 +3,20 @@ import { useGame } from '../../context/GameContext';
 import { Stage, Layer, Rect, Text, Group, Circle, Image } from 'react-konva';
 import Konva from 'konva'; // Import Konva namespace
 
-// Base physics constants
+// Base physics constants - separate desktop and mobile values
 const BASE_GRAVITY = 0.25;
-const BASE_FLAP_STRENGTH = -7;
+const DESKTOP_FLAP_STRENGTH = -7;
+const MOBILE_FLAP_STRENGTH = -5.5;
 const PIPE_WIDTH = 60;
-const BIRD_SIZE_BASE = 40; // Base size, will scale with canvas
+const BIRD_SIZE_BASE = 40;
 
-// Function to calculate responsive size
+// Helper to detect mobile devices
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+    || (window.innerWidth <= 768);
+};
+
+// Function to calculate responsive size (similar to other canvases, maybe slightly different constraints)
 const getResponsiveCanvasSize = () => {
   const padding = 32; 
   const availableWidth = window.innerWidth - padding;
@@ -51,7 +58,7 @@ const FlappyGame = () => {
 
   // Dynamic calculations
   const birdSize = useMemo(() => BIRD_SIZE_BASE * (canvasSize.width / 600), [canvasSize.width]);
-  const pipeGap = useMemo(() => canvasSize.height * 0.3, [canvasSize.height]);
+  const pipeGap = useMemo(() => canvasSize.height * 0.35, [canvasSize.height]); // Increased from 0.3 to 0.35 for better mobile gameplay
   
   // Calculate adjusted physics constants based on difficulty level
   const gravity = useMemo(() => {
@@ -61,9 +68,15 @@ const FlappyGame = () => {
   }, [gameSpeed]);
   
   const flapStrength = useMemo(() => {
-    if (gameSpeed <= 2.5) return BASE_FLAP_STRENGTH * 0.85;
-    if (gameSpeed >= 4.5) return BASE_FLAP_STRENGTH * 1.15;
-    return BASE_FLAP_STRENGTH;
+    if (isMobileDevice()) {
+      if (gameSpeed <= 2.5) return MOBILE_FLAP_STRENGTH * 0.85;
+      if (gameSpeed >= 4.5) return MOBILE_FLAP_STRENGTH * 1.15;
+      return MOBILE_FLAP_STRENGTH;
+    } else {
+      if (gameSpeed <= 2.5) return DESKTOP_FLAP_STRENGTH * 0.85;
+      if (gameSpeed >= 4.5) return DESKTOP_FLAP_STRENGTH * 1.15;
+      return DESKTOP_FLAP_STRENGTH;
+    }
   }, [gameSpeed]);
 
   // Flap function - MOVED BEFORE it's referenced
@@ -175,24 +188,39 @@ const FlappyGame = () => {
       // Simple delta time calculation without normalization
       lastTimeRef.current = timestamp;
       
+      // Calculate ground height here before using it
+      const groundHeight = canvasSize.height * 0.1;
+      
       // Update bird position - apply gravity directly like in original
-      const newVelocity = birdVelocity + gravity;
+      // But limit the velocity changes to prevent extreme position jumps
+      const newVelocity = Math.max(-10, Math.min(10, birdVelocity + gravity));
+      
+      // First check if the bird would hit the ground with the new velocity
+      const wouldHitGround = birdPosition.y + newVelocity > canvasSize.height - groundHeight - birdSize/2;
+      
+      // If the bird would hit the ground, end the game immediately
+      if (wouldHitGround) {
+        endGame();
+        return;
+      }
+      
+      // Calculate new position but constrain it to prevent extreme movement
       const newPosition = {
-        x: birdPosition.x,
-        y: birdPosition.y + newVelocity
+        x: birdPosition.x, // X position stays fixed
+        y: Math.max(birdSize/2, Math.min(canvasSize.height - groundHeight - birdSize/2, birdPosition.y + newVelocity))
       };
       
       setBirdVelocity(newVelocity);
       setBirdPosition(newPosition);
       
-      // Check boundaries using simpler calculation like original
-      const groundHeight = canvasSize.height * 0.1;
-      if (newPosition.y < 0 || newPosition.y > canvasSize.height - groundHeight) {
+      // Check top boundary
+      if (newPosition.y < birdSize/2) {
         endGame();
         return;
       }
       
-      // Update pipes - simple movement without delta time scaling
+      // Update pipes - pipes move toward the character, not character moving through pipes
+      // This helps maintain the illusion without moving the screen
       let shouldAddNewPipe = false;
       let updatedPipes = pipes.map(pipe => {
         const newX = pipe.x - gameSpeed;
@@ -353,9 +381,6 @@ const FlappyGame = () => {
     }
   }, [emojiType, characterColor, characterImage, birdSize]); // Add birdSize dependency
   
-  // Calculate ground height dynamically
-  const groundHeight = canvasSize.height * 0.1;
-
   // Calculate text positions and sizes dynamically
   const scoreTextY = canvasSize.height * 0.04;
   const highScoreTextY = canvasSize.height * 0.1;
@@ -418,9 +443,9 @@ const FlappyGame = () => {
           
           {/* Ground */}
           <Rect
-            y={canvasSize.height - groundHeight}
+            y={canvasSize.height - (canvasSize.height * 0.1)}
             width={canvasSize.width}
-            height={groundHeight}
+            height={canvasSize.height * 0.1}
             fill="#8B4513"
           />
           
