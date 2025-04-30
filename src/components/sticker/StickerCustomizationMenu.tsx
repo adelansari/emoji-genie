@@ -235,7 +235,7 @@ export default function StickerCustomizationMenu() {
         {/* Add header to match mobile drawer experience */}
         <div className="mb-3 px-2 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-purple-300">
-            {selectedStickerPart === selectedStickerSubcategory ? 
+            {selectedStickerSubcategory === 'default' ? 
               `Adjust ${formatName(selectedStickerPart)}` : 
               `Adjust ${formatName(selectedStickerSubcategory)} (${formatName(selectedStickerPart)})`}
           </h3>
