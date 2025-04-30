@@ -1,15 +1,16 @@
 import { useState, useRef, useCallback, memo, useEffect } from "react";
-import { Stage, Layer, Circle } from "react-konva";
-import Konva from 'konva'; 
-import { RotateCcw } from "lucide-react";
+import { Circle, Layer, Stage } from "react-konva";
+import Konva from "konva";
+import { RotateCcw } from 'lucide-react';
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
+import TouchEventWrapper from "./TouchEventWrapper";
 
-// Define props for the component
+// Define props interface
 interface JoystickControllerProps {
-  canvasSize: number; // Add canvasSize prop
+  canvasSize?: number; // Optional prop since we have a default value in the component
 }
 
-function JoystickController({ canvasSize }: JoystickControllerProps) { 
+function JoystickController({ canvasSize = 600 }: JoystickControllerProps) {
   const { position, setPosition } = useEmojiCustomization();
 
   const containerSize = 200; // Keep joystick visual size fixed
@@ -27,13 +28,13 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
   const calculateIndicatorPos = useCallback((pos: { x: number; y: number }) => {
     // First convert the position from relative (0-1) to pixels
     const pixelPos = { 
-      x: pos.x * canvasSize,
-      y: pos.y * canvasSize 
+      x: pos.x * containerSize,
+      y: pos.y * containerSize 
     };
     
     // Map canvas position (relative to center) to joystick position (relative to center)
-    const canvasCenterX = canvasSize / 2;
-    const canvasCenterY = canvasSize / 2;
+    const canvasCenterX = containerSize / 2;
+    const canvasCenterY = containerSize / 2;
     const relativePosX = (pixelPos.x - canvasCenterX) / canvasCenterX; // Range -1 to 1
     const relativePosY = (pixelPos.y - canvasCenterY) / canvasCenterY; // Range -1 to 1
     
@@ -42,7 +43,7 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
       x: center.x + (relativePosX * controlRadius),
       y: center.y + (relativePosY * controlRadius),
     };
-  }, [canvasSize, center.x, center.y, controlRadius]);
+  }, [containerSize, center.x, center.y, controlRadius]);
 
   const [indicatorPosition, setIndicatorPosition] = useState(calculateIndicatorPos(position));
   const [isDragging, setIsDragging] = useState(false);
@@ -64,7 +65,7 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
     const relativeY = dy / controlRadius; // Range -1 to 1
 
     // Convert to relative position values (0-1) instead of absolute pixels
-    const newPosX = 0.5 + (relativeX * 0.5); // Center is 0.5, range is 0-1
+    const newPosX = 0.5 + (relativeX * 0.5);
     const newPosY = 0.5 + (relativeY * 0.5); // Center is 0.5, range is 0-1
 
     // Clamp the values to ensure they stay within 0-1
@@ -122,50 +123,49 @@ function JoystickController({ canvasSize }: JoystickControllerProps) {
         </div>
       </div>
       
-      <Stage
-        width={containerSize}
-        height={containerSize}
-        className="bg-gray-600 rounded-full cursor-pointer"
-        ref={stageRef}
-        onTouchStart={() => setIsDragging(true)}
-        onTouchMove={(e) => handleDragMove(e as any)}
-        onTouchEnd={handleDragEnd}
-      >
-        <Layer>
-          <Circle
-            x={center.x}
-            y={center.y}
-            radius={controlRadius}
-            fill="#4A5568"
-            stroke="#718096"
-            strokeWidth={2}
-            listening={false}
-          />
-          <Circle
-            x={center.x}
-            y={center.y}
-            radius={2}
-            fill="white"
-            listening={false}
-          />
-          <Circle
-            x={indicatorPosition.x}
-            y={indicatorPosition.y}
-            radius={indicatorRadius}
-            fill={isDragging ? "rgb(251 191 36 / 0.8)" : "rgb(252 211 77 / 0.6)"}
-            stroke="white"
-            strokeWidth={1}
-            shadowColor="black"
-            shadowBlur={5}
-            shadowOpacity={0.5}
-            draggable
-            onDragMove={handleDragMove}
-            onDragEnd={handleDragEnd}
-            dragBoundFunc={dragBoundFunc}
-            onDragStart={() => setIsDragging(true)}
-          />
-        </Layer>
-      </Stage>
+      <TouchEventWrapper>
+        <Stage
+          width={containerSize}
+          height={containerSize}
+          className="bg-gray-600 rounded-full cursor-pointer"
+          ref={stageRef}
+        >
+          <Layer>
+            <Circle
+              x={center.x}
+              y={center.y}
+              radius={controlRadius}
+              fill="#4A5568"
+              stroke="#718096"
+              strokeWidth={2}
+              listening={false}
+            />
+            <Circle
+              x={center.x}
+              y={center.y}
+              radius={2}
+              fill="white"
+              listening={false}
+            />
+            <Circle
+              x={indicatorPosition.x}
+              y={indicatorPosition.y}
+              radius={indicatorRadius}
+              fill={isDragging ? "rgb(251 191 36 / 0.8)" : "rgb(252 211 77 / 0.6)"}
+              stroke="white"
+              strokeWidth={1}
+              shadowColor="black"
+              shadowBlur={5}
+              shadowOpacity={0.5}
+              draggable
+              onDragMove={handleDragMove}
+              onDragEnd={handleDragEnd}
+              dragBoundFunc={dragBoundFunc}
+              onDragStart={() => setIsDragging(true)}
+            />
+          </Layer>
+        </Stage>
+      </TouchEventWrapper>
       
       {/* Display current position values */}
       <div className="mt-2 text-xs text-gray-400 text-center">
