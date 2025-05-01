@@ -20,6 +20,13 @@ const defaultTransform: Transform = {
     color: canvasConfig.defaultColor
 };
 
+// New type for selected part identifiers
+export type PartIdentifier = {
+    mode: EmojiType;
+    part: string;
+    subcategory: string;
+};
+
 interface EmojiCustomizationContextType {
     position: { x: number; y: number };
     setPosition: (pos: { x: number; y: number }) => void;
@@ -54,6 +61,14 @@ interface EmojiCustomizationContextType {
     // Legacy prop for backward compatibility during refactoring
     selectedHeadModel: ModelIdType;
     setSelectedHeadModel: (model: ModelIdType) => void;
+    
+    // Multi-select functionality
+    isMultiSelectMode: boolean;
+    toggleMultiSelectMode: () => void;
+    selectedParts: PartIdentifier[];
+    togglePartSelection: (part: PartIdentifier) => void;
+    clearSelectedParts: () => void;
+    isPartSelected: (mode: EmojiType, part: string, subcategory: string) => boolean;
 }
 
 // Create the context with a default value
@@ -86,6 +101,10 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     // Sticker mode states
     const [selectedStickerPart, _setSelectedStickerPart] = useState<StickerPartType>('face');
     const [selectedStickerSubcategory, _setSelectedStickerSubcategory] = useState<StickerSubcategoryType>('shape');
+    
+    // Multi-select mode states
+    const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+    const [selectedParts, setSelectedParts] = useState<PartIdentifier[]>([]);
     
     // Initialize with the proper structure for all subcategories
     const [selectedStickerModels, _setSelectedStickerModels] = useState<Record<StickerPartType, Record<StickerSubcategoryType, ModelIdType | null>>>({
@@ -174,31 +193,103 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         return getTransform(currentMode, part, subcategory);
     }, [emojiType, getCurrentPartAndSubcategory, getTransform]);
 
-    // Update transform for current active part and subcategory
-    const updateCurrentTransform = useCallback((updates: Partial<Transform>) => {
-        const currentMode = emojiType;
-        const { part, subcategory } = getCurrentPartAndSubcategory();
-        
-        setTransforms(prev => {
-            // Ensure nested structure exists
-            const currentModeTransforms = prev[currentMode] || {};
-            const currentPartTransforms = currentModeTransforms[part] || {};
+    // Check if a part is selected in multi-select mode
+    const isPartSelected = useCallback((mode: EmojiType, part: string, subcategory: string): boolean => {
+        return selectedParts.some(p => 
+            p.mode === mode && 
+            p.part === part && 
+            p.subcategory === subcategory
+        );
+    }, [selectedParts]);
+
+    // Toggle selection of a part in multi-select mode
+    const togglePartSelection = useCallback((part: PartIdentifier) => {
+        setSelectedParts(prev => {
+            const isAlreadySelected = prev.some(p => 
+                p.mode === part.mode && 
+                p.part === part.part && 
+                p.subcategory === part.subcategory
+            );
             
-            return {
-                ...prev,
-                [currentMode]: {
-                    ...currentModeTransforms,
-                    [part]: {
-                        ...currentPartTransforms,
-                        [subcategory]: {
-                            ...((currentPartTransforms[subcategory] || defaultTransform)),
-                            ...updates
+            if (isAlreadySelected) {
+                return prev.filter(p => !(
+                    p.mode === part.mode && 
+                    p.part === part.part && 
+                    p.subcategory === part.subcategory
+                ));
+            } else {
+                return [...prev, part];
+            }
+        });
+    }, []);
+
+    // Clear all selected parts
+    const clearSelectedParts = useCallback(() => {
+        setSelectedParts([]);
+    }, []);
+    
+    // Toggle multi-select mode
+    const toggleMultiSelectMode = useCallback(() => {
+        setIsMultiSelectMode(prev => {
+            if (prev) {
+                // Clear selections when exiting multi-select mode
+                setSelectedParts([]);
+            }
+            return !prev;
+        });
+    }, []);
+
+    // Update transform for current active part and subcategory or for all selected parts
+    const updateCurrentTransform = useCallback((updates: Partial<Transform>) => {
+        if (isMultiSelectMode && selectedParts.length > 0) {
+            // Update all selected parts
+            setTransforms(prev => {
+                const newTransforms = {...prev};
+                
+                selectedParts.forEach(({mode, part, subcategory}) => {
+                    // Ensure the nested structure exists
+                    if (!newTransforms[mode]) {
+                        newTransforms[mode] = {};
+                    }
+                    if (!newTransforms[mode][part]) {
+                        newTransforms[mode][part] = {};
+                    }
+                    
+                    // Update with the new values
+                    newTransforms[mode][part][subcategory] = {
+                        ...(newTransforms[mode][part][subcategory] || defaultTransform),
+                        ...updates
+                    };
+                });
+                
+                return newTransforms;
+            });
+        } else {
+            // Update only the current active part (original behavior)
+            const currentMode = emojiType;
+            const { part, subcategory } = getCurrentPartAndSubcategory();
+            
+            setTransforms(prev => {
+                // Ensure nested structure exists
+                const currentModeTransforms = prev[currentMode] || {};
+                const currentPartTransforms = currentModeTransforms[part] || {};
+                
+                return {
+                    ...prev,
+                    [currentMode]: {
+                        ...currentModeTransforms,
+                        [part]: {
+                            ...currentPartTransforms,
+                            [subcategory]: {
+                                ...((currentPartTransforms[subcategory] || defaultTransform)),
+                                ...updates
+                            }
                         }
                     }
-                }
-            };
-        });
-    }, [emojiType, getCurrentPartAndSubcategory]);
+                };
+            });
+        }
+    }, [emojiType, getCurrentPartAndSubcategory, isMultiSelectMode, selectedParts]);
 
     // Memoized setters
     const setPosition = useCallback((newPosition: { x: number; y: number }) => {
@@ -282,6 +373,13 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         selectedStickerModels,
         setSelectedStickerModel,
         getTransform,
+        // Multi-select functionality
+        isMultiSelectMode,
+        toggleMultiSelectMode,
+        selectedParts,
+        togglePartSelection,
+        clearSelectedParts,
+        isPartSelected,
         // Legacy props for backward compatibility
         selectedHeadModel: selectedEmojiModels.head || 'default',
         setSelectedHeadModel

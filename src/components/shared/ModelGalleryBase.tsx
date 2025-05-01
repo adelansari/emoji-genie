@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { Check } from "lucide-react";
+import { useEmojiCustomization, PartIdentifier } from "../../context/EmojiCustomizationContext";
 
 export interface ModelItem {
   id: string;
@@ -14,6 +16,8 @@ export interface ModelGalleryBaseProps {
   selectionColor?: string;
   // No longer applying default colors to SVGs
   preserveOriginalColors?: boolean;
+  // For multi-select functionality
+  partIdentifier?: PartIdentifier;
 }
 
 /**
@@ -25,8 +29,12 @@ export default function ModelGalleryBase({
   onSelectModel,
   emptyStateMessage = "No models available.",
   selectionColor = '#FACC15', // Yellow for selection highlighting only
-  preserveOriginalColors = true
+  preserveOriginalColors = true,
+  partIdentifier
 }: ModelGalleryBaseProps) {
+  // Get multi-select functionality from context
+  const { isMultiSelectMode, togglePartSelection, isPartSelected } = useEmojiCustomization();
+  
   // Check if there are any models to display
   if (models.length === 0) {
     return (
@@ -35,6 +43,11 @@ export default function ModelGalleryBase({
       </p>
     );
   }
+  
+  // Check if current part is selected in multi-select mode
+  const isCurrentPartSelected = partIdentifier 
+    ? isPartSelected(partIdentifier.mode, partIdentifier.part, partIdentifier.subcategory)
+    : false;
   
   return (
     <div className="grid grid-cols-5 gap-2 overflow-y-auto overflow-x-hidden p-1 h-48 items-center justify-center custom-scrollbar">
@@ -48,11 +61,11 @@ export default function ModelGalleryBase({
           <button
             key={model.id}
             onClick={() => onSelectModel(model.id)}
-            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center p-1 rounded border-2 transition-colors duration-150 ${
+            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center p-1 rounded border-2 transition-colors duration-150 relative ${
               isSelected
                 ? "border-yellow-400 bg-yellow-400/20 text-yellow-300"
                 : "border-gray-600 hover:border-gray-500 bg-gray-700/50 hover:bg-gray-700/80 text-gray-300 hover:text-white"
-            }`}
+            } ${isMultiSelectMode && isCurrentPartSelected ? "ring-2 ring-indigo-500 ring-offset-1 ring-offset-gray-700" : ""}`}
             title={model.name}
           >
             <div className="flex items-center justify-center w-full h-full">
@@ -63,6 +76,13 @@ export default function ModelGalleryBase({
                 // No fill prop - let SVG use its original colors
               />
             </div>
+            
+            {/* Show multi-select indicator if this part is selected in multi-select mode */}
+            {isMultiSelectMode && isCurrentPartSelected && isSelected && (
+              <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 bg-indigo-500 rounded-full p-0.5">
+                <Check size={12} className="text-white" />
+              </div>
+            )}
           </button>
         );
       })}
