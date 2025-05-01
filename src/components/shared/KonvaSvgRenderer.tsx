@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Image } from 'react-konva';
 import ReactDOMServer from 'react-dom/server';
+import { canvasConfig } from '../../utils/canvasConfig';
 
 interface KonvaSvgRendererProps {
   svgComponent: React.FC<any>;
@@ -11,10 +12,12 @@ interface KonvaSvgRendererProps {
   scaleY: number;
   fill?: string;
   zIndex?: number;
+  canvasSize: number; // Now required to properly calculate adaptive sizing
 }
 
 /**
  * Renders SVG components in Konva by converting them to Image objects
+ * Automatically handles proper positioning and centering with adaptive sizing
  */
 const KonvaSvgRenderer: React.FC<KonvaSvgRendererProps> = ({
   svgComponent: SvgComponent,
@@ -24,17 +27,28 @@ const KonvaSvgRenderer: React.FC<KonvaSvgRendererProps> = ({
   scaleX,
   scaleY,
   fill,
-  zIndex = 1
+  zIndex = 1,
+  canvasSize
 }) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  
+  // Use the base SVG size from the centralized config
+  const originalSize = canvasConfig.baseSvgSize;
+  const halfOriginalSize = originalSize / 2;
+  
+  // Create a ref to store the image dimensions after loading
+  const imageDimensionsRef = useRef({ width: originalSize, height: originalSize });
   
   useEffect(() => {
     // Create an in-memory SVG and convert it to an image
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("width", "100");
-    svg.setAttribute("height", "100");
+    svg.setAttribute("width", originalSize.toString());
+    svg.setAttribute("height", originalSize.toString());
+    svg.setAttribute("viewBox", `0 0 ${originalSize} ${originalSize}`);
     
-    const svgString = ReactDOMServer.renderToString(<SvgComponent fill={fill} />);
+    // Only pass fill if it's not the default white color
+    const svgProps = fill && fill !== canvasConfig.defaultColor ? { fill } : {};
+    const svgString = ReactDOMServer.renderToString(<SvgComponent {...svgProps} />);
     svg.innerHTML = svgString;
     
     // Convert SVG to image
@@ -43,18 +57,26 @@ const KonvaSvgRenderer: React.FC<KonvaSvgRendererProps> = ({
     
     const img = new window.Image();
     img.onload = () => {
+      // Store actual dimensions
+      imageDimensionsRef.current = {
+        width: img.naturalWidth || originalSize,
+        height: img.naturalHeight || originalSize
+      };
       setImage(img);
     };
+    img.onerror = (err) => {
+      console.error("Failed to load SVG image:", err);
+    };
     img.src = dataUrl;
-  }, [SvgComponent, fill]);
+  }, [SvgComponent, fill, originalSize]);
   
   return image ? (
     <Image
       image={image}
       x={x}
       y={y}
-      offsetX={50} // Half of the original SVG size (100px)
-      offsetY={50} // Half of the original SVG size (100px)
+      offsetX={halfOriginalSize} // Center horizontally
+      offsetY={halfOriginalSize} // Center vertically
       rotation={rotation}
       scaleX={scaleX}
       scaleY={scaleY}

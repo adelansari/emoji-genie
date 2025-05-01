@@ -1,8 +1,10 @@
-import { memo } from 'react';
-import { Stage, Layer, Rect, Text } from 'react-konva';
-import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
+import { memo, useMemo } from 'react';
+import { Layer, Text } from 'react-konva';
+import { useEmojiCustomization } from '../../context/EmojiCustomizationContext';
 import { findEmojiModel } from '../../data/emoji/emojiModels';
 import KonvaSvgRenderer from '../shared/KonvaSvgRenderer';
+import BaseCanvas from '../shared/BaseCanvas';
+import { getAdaptiveScale } from '../../utils/canvasConfig';
 
 /**
  * Canvas component for rendering emoji models using Konva
@@ -12,61 +14,51 @@ function EmojiCanvas() {
     getTransform,
     selectedEmojiModels
   } = useEmojiCustomization();
-
-  const canvasSize = 600;
   
   // For emoji mode, use the head model
-  const headModel = findEmojiModel('head', selectedEmojiModels.head || 'default');
+  const headModel = useMemo(() => findEmojiModel('head', selectedEmojiModels.head || 'default'), [selectedEmojiModels.head]);
   
   // Get transform for head
   const headTransform = getTransform('emoji', 'head', 'default');
-  
-  return (
-    <div
-      id="emoji-canvas-container"
-      className="bg-gray-700 rounded-lg shadow-xl overflow-hidden relative"
-    >
-      <Stage
-        width={canvasSize}
-        height={canvasSize}
-      >
-        {/* Canvas background */}
-        <Layer>
-          <Rect
-            width={canvasSize}
-            height={canvasSize}
-            fill="#555"
-          />
-        </Layer>
 
-        {/* Emoji parts layer */}
-        <Layer>
-          {headModel ? (
-            <KonvaSvgRenderer
-              svgComponent={headModel.SvgComponent}
-              x={headTransform.position.x}
-              y={headTransform.position.y}
-              rotation={headTransform.rotation}
-              scaleX={headTransform.size.x / 100}
-              scaleY={headTransform.size.y / 100}
-              fill={headModel.id === 'default' ? undefined : headTransform.color}
-            />
-          ) : (
-            <Text
-              text={`Head model not found: ${selectedEmojiModels.head}`}
-              x={canvasSize/2}
-              y={50}
-              width={300}
-              align="center"
-              fill="white"
-              fontSize={16}
-            />
-          )}
-          
-          {/* Add other emoji parts here when implemented */}
-        </Layer>
-      </Stage>
-    </div>
+  return (
+    <BaseCanvas containerId="emoji-canvas-container" backgroundColor="#555">
+      {(canvasSize) => {
+        // Calculate the adaptive scale factor based on canvas size
+        const adaptiveScale = getAdaptiveScale(canvasSize);
+        
+        return (
+          <Layer>
+            {headModel ? (
+              <KonvaSvgRenderer
+                svgComponent={headModel.SvgComponent}
+                x={headTransform.position.x * canvasSize}
+                y={headTransform.position.y * canvasSize}
+                rotation={headTransform.rotation}
+                // Apply both the user's size setting and the adaptive scale
+                scaleX={(headTransform.size.x / 100) * adaptiveScale}
+                scaleY={(headTransform.size.y / 100) * adaptiveScale}
+                fill={headModel.id === 'default' ? undefined : headTransform.color}
+                canvasSize={canvasSize}
+              />
+            ) : (
+              <Text
+                text={`Head model not found: ${selectedEmojiModels.head}`}
+                x={canvasSize / 2}
+                y={50}
+                width={canvasSize * 0.8}
+                offsetX={(canvasSize * 0.8) / 2}
+                align="center"
+                fill="white"
+                fontSize={16}
+              />
+            )}
+            
+            {/* Add other emoji parts here when implemented */}
+          </Layer>
+        );
+      }}
+    </BaseCanvas>
   );
 }
 

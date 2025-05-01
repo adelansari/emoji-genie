@@ -3,6 +3,7 @@ import { Circle, Layer, Stage, Line } from "react-konva";
 import { RotateCcw } from 'lucide-react';
 import Konva from "konva";
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
+import TouchEventWrapper from "./TouchEventWrapper";
 
 const RotationJoystickComponent = () => {
   const { rotation, setRotation } = useEmojiCustomization();
@@ -87,52 +88,54 @@ const RotationJoystickComponent = () => {
         </div>
       </div>
     
-      <Stage
-        width={containerSize}
-        height={containerSize}
-        ref={stageRef}
-        className="cursor-pointer"
-      >
-        <Layer>
-          <Circle
-            x={center.x}
-            y={center.y}
-            radius={trackRadius}
-            stroke="#4A5568"
-            strokeWidth={10}
-            listening={false}
-          />
-          <Circle
-            x={center.x}
-            y={center.y}
-            radius={5}
-            fill="#718096"
-            listening={false}
-          />
-          <Line
-            points={[center.x, center.y, handlePosition.x, handlePosition.y]}
-            stroke={isDragging ? "rgb(251 191 36 / 0.8)" : "rgb(252 211 77 / 0.6)"}
-            strokeWidth={3}
-            listening={false}
-          />
-          <Circle
-            x={handlePosition.x}
-            y={handlePosition.y}
-            radius={handleRadius}
-            fill={isDragging ? "rgb(251 191 36 / 0.8)" : "rgb(252 211 77 / 0.6)"}
-            stroke="white"
-            strokeWidth={1}
-            shadowColor="black"
-            shadowBlur={5}
-            shadowOpacity={0.5}
-            draggable
-            onDragMove={handleDragMove}
-            onDragEnd={handleDragEnd}
-            dragBoundFunc={dragBoundFunc}
-            onDragStart={() => setIsDragging(true)}
-          />
-        </Layer>
-      </Stage>
+      <TouchEventWrapper>
+        <Stage
+          width={containerSize}
+          height={containerSize}
+          ref={stageRef}
+          className="cursor-pointer"
+        >
+          <Layer>
+            <Circle
+              x={center.x}
+              y={center.y}
+              radius={trackRadius}
+              stroke="#4A5568"
+              strokeWidth={10}
+              listening={false}
+            />
+            <Circle
+              x={center.x}
+              y={center.y}
+              radius={5}
+              fill="#718096"
+              listening={false}
+            />
+            <Line
+              points={[center.x, center.y, handlePosition.x, handlePosition.y]}
+              stroke={isDragging ? "rgb(251 191 36 / 0.8)" : "rgb(252 211 77 / 0.6)"}
+              strokeWidth={3}
+              listening={false}
+            />
+            <Circle
+              x={handlePosition.x}
+              y={handlePosition.y}
+              radius={handleRadius}
+              fill={isDragging ? "rgb(251 191 36 / 0.8)" : "rgb(252 211 77 / 0.6)"}
+              stroke="white"
+              strokeWidth={1}
+              shadowColor="black"
+              shadowBlur={5}
+              shadowOpacity={0.5}
+              draggable
+              onDragMove={handleDragMove}
+              onDragEnd={handleDragEnd}
+              dragBoundFunc={dragBoundFunc}
+              onDragStart={() => setIsDragging(true)}
+            />
+          </Layer>
+        </Stage>
+      </TouchEventWrapper>
       <p className="text-center text-gray-300 mt-2">{rotation}°</p>
     </div>
   );

@@ -1,6 +1,7 @@
-import { ColorResult, ChromePicker, TwitterPicker } from 'react-color';
+import { useCallback, memo } from "react";
+import { ChromePicker, TwitterPicker, ColorResult } from 'react-color';
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
-import { useCallback, memo } from 'react';
+import TouchEventWrapper from "./TouchEventWrapper";
 
 function ColorPickerComponent() {
   const { color, setColor } = useEmojiCustomization();
@@ -15,7 +16,7 @@ function ColorPickerComponent() {
 
   return (
     <div className="bg-gray-700/50 rounded-lg flex flex-col items-center">
-      <div className="chrome-picker-wrapper w-full">
+      <TouchEventWrapper className="chrome-picker-wrapper w-full">
         <ChromePicker
           color={color}
           onChange={handleChange}
@@ -38,29 +39,31 @@ function ColorPickerComponent() {
             },
           }}
         />
-      </div>
-      <TwitterPicker
-        color={color}
-        onChangeComplete={handleChangeComplete}
-        triangle='hide'
-        styles={{
-          default: {
-            card: {
-              width: '100%',
-              backgroundColor: 'transparent',
-              boxShadow: 'none',
-              color: "white",
-              marginTop: '-10px',
+      </TouchEventWrapper>
+      <TouchEventWrapper>
+        <TwitterPicker
+          color={color}
+          onChangeComplete={handleChangeComplete}
+          triangle='hide'
+          styles={{
+            default: {
+              card: {
+                width: '100%',
+                backgroundColor: 'transparent',
+                boxShadow: 'none',
+                color: "white",
+                marginTop: '-10px',
+              },
+              input: {
+                backgroundColor: 'white',
+                opacity: 0.7,
+                color: 'black',
+                height: '30px',
+              },
             },
-            input: {
-              backgroundColor: 'white',
-              opacity: 0.7,
-              color: 'black',
-              height: '30px',
-            },
-          },
-        }}
-      />
+          }}
+        />
+      </TouchEventWrapper>
     </div>
   );
 }

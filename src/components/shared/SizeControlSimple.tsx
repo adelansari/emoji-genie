@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { Lock, Unlock, RotateCcw } from 'lucide-react';
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
+import TouchEventWrapper from "./TouchEventWrapper";
 
 const SizeControlSimpleComponent = ({ minSize = 1, maxSize = 500 }) => {
     const { size, setSize } = useEmojiCustomization();
@@ -84,7 +85,7 @@ const SizeControlSimpleComponent = ({ minSize = 1, maxSize = 500 }) => {
                     </button>
                 </div>
             </div>
-            <div className="w-full flex flex-col gap-5">
+            <TouchEventWrapper className="w-full flex flex-col gap-5">
                 <div className="flex items-center gap-3">
                     <label htmlFor="sizeXSliderSimple" className="font-medium text-sm w-4 text-gray-300">X:</label>
                     <input
@@ -113,7 +114,7 @@ const SizeControlSimpleComponent = ({ minSize = 1, maxSize = 500 }) => {
                     />
                     <span className="text-sm w-10 text-right text-gray-300">{sizeY}%</span>
                 </div>
-            </div>
+            </TouchEventWrapper>
         </div>
     );
 };

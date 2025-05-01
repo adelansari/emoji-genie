@@ -2,8 +2,16 @@ import { createContext, useState, useCallback, useContext, ReactNode } from 'rea
 import { ModelIdType } from '../data/modelTypes';
 import { EmojiPartType } from '../data/emoji/emojiModels';
 import { StickerPartType, StickerSubcategoryType, subcategories } from '../data/sticker/stickerModels';
+import { canvasConfig, getAdaptiveScale } from '../utils/canvasConfig';
 
 export type EmojiType = 'emoji' | 'sticker';
+
+// Define a type for part identification in multi-select mode
+export type PartIdentifier = {
+  mode: EmojiType;
+  part: string;
+  subcategory: string;
+}
 
 interface Transform {
     position: { x: number; y: number };
@@ -13,10 +21,10 @@ interface Transform {
 }
 
 const defaultTransform: Transform = {
-    position: { x: 300, y: 300 },
+    position: { x: 0.5, y: 0.5 }, // Center position as a ratio (0.5, 0.5 = center)
     rotation: 0,
-    size: { x: 200, y: 200 },
-    color: "#FFFFFF" 
+    size: { x: 100, y: 100 }, // Base size percentage (will be combined with adaptive scaling)
+    color: canvasConfig.defaultColor
 };
 
 interface EmojiCustomizationContextType {
@@ -28,6 +36,15 @@ interface EmojiCustomizationContextType {
     setSize: (size: { x: number; y: number }) => void;
     color: string;
     setColor: (color: string) => void;
+    
+    // Multi-select mode
+    isMultiSelectMode: boolean;
+    toggleMultiSelectMode: () => void;
+    selectedParts: PartIdentifier[];
+    togglePartSelection: (partId: PartIdentifier) => void;
+    removePartSelection: (partId: PartIdentifier) => void;  // New function to remove selection
+    clearSelectedParts: () => void;
+    isPartSelected: (partId: PartIdentifier) => boolean;
     
     // Emoji type toggle
     emojiType: EmojiType;
@@ -73,6 +90,10 @@ interface EmojiCustomizationProviderProps {
 export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProps> = ({ children }) => {
     const [emojiType, _setEmojiType] = useState<EmojiType>("sticker");
     
+    // Multi-select mode
+    const [isMultiSelectMode, setIsMultiSelectMode] = useState<boolean>(false);
+    const [selectedParts, setSelectedParts] = useState<PartIdentifier[]>([]);
+    
     // Emoji mode states
     const [selectedEmojiPart, _setSelectedEmojiPart] = useState<EmojiPartType>('head');
     const [selectedEmojiModels, _setSelectedEmojiModels] = useState<Record<EmojiPartType, ModelIdType | null>>({
@@ -89,7 +110,7 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     // Initialize with the proper structure for all subcategories
     const [selectedStickerModels, _setSelectedStickerModels] = useState<Record<StickerPartType, Record<StickerSubcategoryType, ModelIdType | null>>>({
         face: {
-            shape: 'shape01',
+            shape: 'shape01', // Keep the face shape as default
             mouth: null,
             eyeShape: null,
             eyebrows: null,
@@ -98,8 +119,8 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         eyes: {
             shape: null,
             mouth: null,
-            eyeShape: 'eyeShape01',
-            eyebrows: 'eyebrows01',
+            eyeShape: null, // Changed from 'eyeShape01' to null
+            eyebrows: null, // Changed from 'eyebrows01' to null
             default: null
         },
         hair: {
@@ -107,14 +128,14 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
             mouth: null,
             eyeShape: null,
             eyebrows: null,
-            default: 'hair01'
+            default: null  // Changed from 'hair01' to null
         },
         others: {
             shape: null,
             mouth: null,
             eyeShape: null,
             eyebrows: null,
-            default: 'accessory01'
+            default: null  // Changed from 'accessory01' to null
         }
     });
     
@@ -145,6 +166,77 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         }
     });
 
+    // Multi-selection mode handlers
+    const toggleMultiSelectMode = useCallback(() => {
+        setIsMultiSelectMode(prev => !prev);
+        // Clear selections when toggling mode
+        setSelectedParts([]);
+    }, []);
+
+    const isPartSelected = useCallback((partId: PartIdentifier) => {
+        return selectedParts.some(p => 
+            p.mode === partId.mode && 
+            p.part === partId.part && 
+            p.subcategory === partId.subcategory
+        );
+    }, [selectedParts]);
+
+    // Modified to enforce "one part per subcategory" rule
+    const togglePartSelection = useCallback((partId: PartIdentifier) => {
+        setSelectedParts(prev => {
+            // Check if this part is already selected
+            const isAlreadySelected = prev.some(p => 
+                p.mode === partId.mode && 
+                p.part === partId.part && 
+                p.subcategory === partId.subcategory
+            );
+            
+            if (isAlreadySelected) {
+                // If selected, remove it
+                return prev.filter(p => 
+                    !(p.mode === partId.mode && 
+                      p.part === partId.part && 
+                      p.subcategory === partId.subcategory)
+                );
+            } else {
+                // Extract the base subcategory without model ID
+                const baseSubcategory = partId.subcategory.includes('-') 
+                    ? partId.subcategory.split('-')[0] 
+                    : partId.subcategory;
+                
+                // Remove any existing selection from the same part+subcategory combination
+                const filteredParts = prev.filter(p => {
+                    // Extract the base subcategory for comparison
+                    const pBaseSubcategory = p.subcategory.includes('-') 
+                        ? p.subcategory.split('-')[0] 
+                        : p.subcategory;
+                    
+                    // Keep if it's not the same part type or base subcategory
+                    return !(p.mode === partId.mode && 
+                           p.part === partId.part && 
+                           pBaseSubcategory === baseSubcategory);
+                });
+                
+                // Add the new selection
+                return [...filteredParts, partId];
+            }
+        });
+    }, []);
+
+    const removePartSelection = useCallback((partId: PartIdentifier) => {
+        setSelectedParts(prev => 
+            prev.filter(p => 
+                !(p.mode === partId.mode && 
+                  p.part === partId.part && 
+                  p.subcategory === partId.subcategory)
+            )
+        );
+    }, []);
+
+    const clearSelectedParts = useCallback(() => {
+        setSelectedParts([]);
+    }, []);
+
     // Helper to get current active part and subcategory based on mode
     const getCurrentPartAndSubcategory = useCallback(() => {
         if (emojiType === 'emoji') {
@@ -174,30 +266,58 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     }, [emojiType, getCurrentPartAndSubcategory, getTransform]);
 
     // Update transform for current active part and subcategory
+    // Enhanced to handle multi-selection with unique part identifiers
     const updateCurrentTransform = useCallback((updates: Partial<Transform>) => {
         const currentMode = emojiType;
-        const { part, subcategory } = getCurrentPartAndSubcategory();
         
         setTransforms(prev => {
-            // Ensure nested structure exists
-            const currentModeTransforms = prev[currentMode] || {};
-            const currentPartTransforms = currentModeTransforms[part] || {};
+            // Create a copy of the transforms to modify
+            const updatedTransforms = {...prev};
             
-            return {
-                ...prev,
-                [currentMode]: {
-                    ...currentModeTransforms,
-                    [part]: {
-                        ...currentPartTransforms,
-                        [subcategory]: {
-                            ...((currentPartTransforms[subcategory] || defaultTransform)),
-                            ...updates
-                        }
+            // In multi-select mode, update all selected parts
+            if (isMultiSelectMode && selectedParts.length > 0) {
+                // Apply updates to all selected parts
+                selectedParts.forEach(({ mode, part, subcategory }) => {
+                    // Extract the actual subcategory name without the model ID if present
+                    // Example: "eyeShape-model01" -> "eyeShape"
+                    const actualSubcategory = subcategory.includes('-') 
+                        ? subcategory.split('-')[0] 
+                        : subcategory;
+                    
+                    // Ensure the structures exist
+                    if (!updatedTransforms[mode]) updatedTransforms[mode] = {};
+                    if (!updatedTransforms[mode][part]) updatedTransforms[mode][part] = {};
+                    if (!updatedTransforms[mode][part][actualSubcategory]) {
+                        updatedTransforms[mode][part][actualSubcategory] = {...defaultTransform};
                     }
+                    
+                    // Apply the updates
+                    updatedTransforms[mode][part][actualSubcategory] = {
+                        ...updatedTransforms[mode][part][actualSubcategory],
+                        ...updates
+                    };
+                });
+            } else {
+                // Single selection mode - update only the current part
+                const { part, subcategory } = getCurrentPartAndSubcategory();
+                
+                // Ensure the structures exist
+                if (!updatedTransforms[currentMode]) updatedTransforms[currentMode] = {};
+                if (!updatedTransforms[currentMode][part]) updatedTransforms[currentMode][part] = {};
+                if (!updatedTransforms[currentMode][part][subcategory]) {
+                    updatedTransforms[currentMode][part][subcategory] = {...defaultTransform};
                 }
-            };
+                
+                // Apply the updates
+                updatedTransforms[currentMode][part][subcategory] = {
+                    ...updatedTransforms[currentMode][part][subcategory],
+                    ...updates
+                };
+            }
+            
+            return updatedTransforms;
         });
-    }, [emojiType, getCurrentPartAndSubcategory]);
+    }, [emojiType, isMultiSelectMode, selectedParts, getCurrentPartAndSubcategory]);
 
     // Memoized setters
     const setPosition = useCallback((newPosition: { x: number; y: number }) => {
@@ -218,38 +338,95 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     
     const setEmojiType = useCallback((newType: EmojiType) => {
         _setEmojiType(newType);
-    }, []);
+        // Clear multi-selections when switching mode
+        clearSelectedParts();
+    }, [clearSelectedParts]);
     
     const setSelectedEmojiPart = useCallback((part: EmojiPartType) => {
         _setSelectedEmojiPart(part);
-    }, []);
+        
+        // In single selection mode, update the current part
+        if (!isMultiSelectMode) {
+            clearSelectedParts();
+        }
+    }, [isMultiSelectMode, clearSelectedParts]);
     
     const setSelectedEmojiModel = useCallback((part: EmojiPartType, modelId: ModelIdType | null) => {
-        _setSelectedEmojiModels(prev => ({
-            ...prev,
-            [part]: modelId
-        }));
-    }, []);
+        _setSelectedEmojiModels(prev => {
+            // In multi-select mode, don't toggle - just update the model
+            if (isMultiSelectMode) {
+                return {
+                    ...prev,
+                    [part]: modelId
+                };
+            }
+            
+            // In single-select mode, toggle behavior
+            if (prev[part] === modelId) {
+                return {
+                    ...prev,
+                    [part]: null
+                };
+            }
+            return {
+                ...prev,
+                [part]: modelId
+            };
+        });
+    }, [isMultiSelectMode]);
     
     const setSelectedStickerPart = useCallback((part: StickerPartType) => {
         _setSelectedStickerPart(part);
         // Set default subcategory when changing part
         _setSelectedStickerSubcategory(subcategories[part][0]);
-    }, []);
+        
+        // In single selection mode, update the current part
+        if (!isMultiSelectMode) {
+            clearSelectedParts();
+        }
+    }, [isMultiSelectMode, clearSelectedParts]);
     
     const setSelectedStickerSubcategory = useCallback((subcategory: StickerSubcategoryType) => {
         _setSelectedStickerSubcategory(subcategory);
-    }, []);
+        
+        // In single selection mode, update the current subcategory
+        if (!isMultiSelectMode) {
+            clearSelectedParts();
+        }
+    }, [isMultiSelectMode, clearSelectedParts]);
     
     const setSelectedStickerModel = useCallback((part: StickerPartType, subcategory: StickerSubcategoryType, modelId: ModelIdType | null) => {
-        _setSelectedStickerModels(prev => ({
-            ...prev,
-            [part]: {
-                ...prev[part],
-                [subcategory]: modelId
+        _setSelectedStickerModels(prev => {
+            // In multi-select mode, don't toggle - just update the model
+            if (isMultiSelectMode) {
+                return {
+                    ...prev,
+                    [part]: {
+                        ...prev[part],
+                        [subcategory]: modelId
+                    }
+                };
             }
-        }));
-    }, []);
+            
+            // In single-select mode, toggle behavior
+            if (prev[part]?.[subcategory] === modelId) {
+                return {
+                    ...prev,
+                    [part]: {
+                        ...prev[part],
+                        [subcategory]: null
+                    }
+                };
+            }
+            return {
+                ...prev,
+                [part]: {
+                    ...prev[part],
+                    [subcategory]: modelId
+                }
+            };
+        });
+    }, [isMultiSelectMode]);
     
     // Legacy setter for backward compatibility
     const setSelectedHeadModel = useCallback((modelId: ModelIdType) => {
@@ -268,6 +445,16 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         setSize,
         color: currentTransform.color,
         setColor,
+        
+        // Multi-select mode
+        isMultiSelectMode,
+        toggleMultiSelectMode,
+        selectedParts,
+        togglePartSelection,
+        removePartSelection,
+        clearSelectedParts,
+        isPartSelected,
+        
         emojiType,
         setEmojiType,
         selectedEmojiPart,

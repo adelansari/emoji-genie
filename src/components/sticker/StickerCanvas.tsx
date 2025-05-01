@@ -1,8 +1,10 @@
-import { memo } from 'react';
-import { Stage, Layer, Rect, Text } from 'react-konva';
-import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
+import { memo, useMemo } from 'react';
+import { Layer, Text } from 'react-konva';
+import { useEmojiCustomization } from '../../context/EmojiCustomizationContext';
 import { findStickerModel } from '../../data/sticker/stickerModels';
 import KonvaSvgRenderer from '../shared/KonvaSvgRenderer';
+import BaseCanvas from '../shared/BaseCanvas';
+import { getAdaptiveScale } from '../../utils/canvasConfig';
 
 /**
  * Canvas component for rendering sticker characters using Konva
@@ -10,93 +12,89 @@ import KonvaSvgRenderer from '../shared/KonvaSvgRenderer';
 function StickerCanvas() {
   const { 
     getTransform,
-    selectedStickerModels
+    selectedStickerModels,
+    selectedStickerPart,
+    selectedStickerSubcategory
   } = useEmojiCustomization();
 
-  const canvasSize = 600;
-  
   // Retrieve selected models for all categories and subcategories
-  const faceModel = selectedStickerModels.face?.shape ? 
-    findStickerModel('face', 'shape', selectedStickerModels.face.shape) : null;
+  const faceModel = useMemo(() => selectedStickerModels.face?.shape ? 
+    findStickerModel('face', 'shape', selectedStickerModels.face.shape) : null, [selectedStickerModels.face?.shape]);
   
-  const mouthModel = selectedStickerModels.face?.mouth ? 
-    findStickerModel('face', 'mouth', selectedStickerModels.face.mouth) : null;
+  const mouthModel = useMemo(() => selectedStickerModels.face?.mouth ? 
+    findStickerModel('face', 'mouth', selectedStickerModels.face.mouth) : null, [selectedStickerModels.face?.mouth]);
     
-  const eyeShapeModel = selectedStickerModels.eyes?.eyeShape ? 
-    findStickerModel('eyes', 'eyeShape', selectedStickerModels.eyes.eyeShape) : null;
+  const eyeShapeModel = useMemo(() => selectedStickerModels.eyes?.eyeShape ? 
+    findStickerModel('eyes', 'eyeShape', selectedStickerModels.eyes.eyeShape) : null, [selectedStickerModels.eyes?.eyeShape]);
   
-  const eyebrowsModel = selectedStickerModels.eyes?.eyebrows ? 
-    findStickerModel('eyes', 'eyebrows', selectedStickerModels.eyes.eyebrows) : null;
+  const eyebrowsModel = useMemo(() => selectedStickerModels.eyes?.eyebrows ? 
+    findStickerModel('eyes', 'eyebrows', selectedStickerModels.eyes.eyebrows) : null, [selectedStickerModels.eyes?.eyebrows]);
   
-  const hairModel = selectedStickerModels.hair?.default ? 
-    findStickerModel('hair', 'default', selectedStickerModels.hair.default) : null;
+  const hairModel = useMemo(() => selectedStickerModels.hair?.default ? 
+    findStickerModel('hair', 'default', selectedStickerModels.hair.default) : null, [selectedStickerModels.hair?.default]);
   
-  const othersModel = selectedStickerModels.others?.default ? 
-    findStickerModel('others', 'default', selectedStickerModels.others.default) : null;
+  const othersModel = useMemo(() => selectedStickerModels.others?.default ? 
+    findStickerModel('others', 'default', selectedStickerModels.others.default) : null, [selectedStickerModels.others?.default]);
   
   const hasAnyModels = faceModel || eyeShapeModel || eyebrowsModel || hairModel || mouthModel || othersModel;
   
-  // Helper for rendering a model with the right transform
-  const renderModelWithTransform = (part: string, subcategory: string, model: any) => {
+  // Helper for rendering a model with adaptive scaling
+  const renderModelWithTransform = (part: string, subcategory: string, model: any, canvasSize: number) => {
     if (!model) return null;
     
+    // Get the transform for this part and subcategory
     const transform = getTransform('sticker', part, subcategory as any);
+    
+    // Convert relative position (0-1) to absolute canvas position
+    const pixelX = transform.position.x * canvasSize;
+    const pixelY = transform.position.y * canvasSize;
+
+    // Calculate the adaptive scale factor based on canvas size
+    const adaptiveScale = getAdaptiveScale(canvasSize);
     
     return (
       <KonvaSvgRenderer
+        key={`${part}-${subcategory}-${model.id}`}
         svgComponent={model.SvgComponent}
-        x={transform.position.x}
-        y={transform.position.y}
+        x={pixelX}
+        y={pixelY}
         rotation={transform.rotation}
-        scaleX={transform.size.x / 100}
-        scaleY={transform.size.y / 100}
-        fill={part === 'face' && subcategory === 'shape' ? transform.color : 
-              part === 'hair' ? '#663300' : '#333333'}
+        // Apply both the user's size setting and the adaptive scale
+        scaleX={(transform.size.x / 100) * adaptiveScale}
+        scaleY={(transform.size.y / 100) * adaptiveScale}
+        fill={transform.color}
+        canvasSize={canvasSize}
       />
     );
   };
   
   return (
-    <div
-      id="sticker-canvas-container"
-      className="bg-gray-700 rounded-lg shadow-xl overflow-hidden relative"
-    >
-      <Stage
-        width={canvasSize}
-        height={canvasSize}
-      >
-        {/* Canvas background */}
+    <BaseCanvas containerId="sticker-canvas-container" backgroundColor="#444">
+      {(canvasSize) => (
         <Layer>
-          <Rect
-            width={canvasSize}
-            height={canvasSize}
-            fill="#444"
-          />
-        </Layer>
-        
-        {/* Sticker parts layer */}
-        <Layer>
-          {faceModel && renderModelWithTransform('face', 'shape', faceModel)}
-          {mouthModel && renderModelWithTransform('face', 'mouth', mouthModel)}
-          {eyeShapeModel && renderModelWithTransform('eyes', 'eyeShape', eyeShapeModel)}
-          {eyebrowsModel && renderModelWithTransform('eyes', 'eyebrows', eyebrowsModel)}
-          {hairModel && renderModelWithTransform('hair', 'default', hairModel)}
-          {othersModel && renderModelWithTransform('others', 'default', othersModel)}
+          {/* Render order matters - hair behind face, face before eyes, etc. */}
+          {hairModel && renderModelWithTransform('hair', 'default', hairModel, canvasSize)}
+          {faceModel && renderModelWithTransform('face', 'shape', faceModel, canvasSize)}
+          {mouthModel && renderModelWithTransform('face', 'mouth', mouthModel, canvasSize)}
+          {eyeShapeModel && renderModelWithTransform('eyes', 'eyeShape', eyeShapeModel, canvasSize)}
+          {eyebrowsModel && renderModelWithTransform('eyes', 'eyebrows', eyebrowsModel, canvasSize)}
+          {othersModel && renderModelWithTransform('others', 'default', othersModel, canvasSize)}
           
           {!hasAnyModels && (
             <Text
               text="No sticker parts selected. Choose from the gallery."
-              x={canvasSize/2}
+              x={canvasSize / 2} // Center text
               y={50}
-              width={400}
+              width={canvasSize * 0.8} // Adjust width
+              offsetX={(canvasSize * 0.8) / 2} // Center align offset
               align="center"
               fill="white"
               fontSize={16}
             />
           )}
         </Layer>
-      </Stage>
-    </div>
+      )}
+    </BaseCanvas>
   );
 }
 
