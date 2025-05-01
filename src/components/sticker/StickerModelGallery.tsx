@@ -14,13 +14,13 @@ export default function StickerModelGallery() {
     setSelectedStickerModel
   } = useEmojiCustomization();
 
-  // Get models for the current part and subcategory
-  const currentModels = selectedStickerPart
-    ? stickerModels[selectedStickerPart][selectedStickerSubcategory]
-    : null;
+  // Get models for the current part and subcategory, defaulting to empty array if not available
+  const currentModels = selectedStickerPart && selectedStickerSubcategory
+    ? stickerModels[selectedStickerPart]?.[selectedStickerSubcategory] ?? []
+    : [];
   
   // Get the currently selected model ID for this part and subcategory
-  const selectedModelId = selectedStickerPart
+  const selectedModelId = selectedStickerPart && selectedStickerSubcategory
     ? selectedStickerModels[selectedStickerPart]?.[selectedStickerSubcategory]
     : null;
   
