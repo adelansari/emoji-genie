@@ -7,6 +7,7 @@ interface SelectableItemProps {
   className?: string;
   onClick?: () => void;
   forceSelected?: boolean;
+  indicatorPosition?: "topleft" | "topright";
 }
 
 /**
@@ -17,7 +18,8 @@ const SelectableItem = ({
   children, 
   className = "", 
   onClick,
-  forceSelected = false
+  forceSelected = false,
+  indicatorPosition = "topright"
 }: SelectableItemProps) => {
   const { 
     isMultiSelectMode, 
@@ -37,6 +39,11 @@ const SelectableItem = ({
   // Use forceSelected prop or check if part is selected
   const isSelected = forceSelected || (isMultiSelectMode && isPartSelected(partId));
 
+  // Determine position class based on indicatorPosition prop
+  const positionClass = indicatorPosition === "topleft" 
+    ? "-top-1 -left-1" 
+    : "-top-1 -right-1";
+
   return (
     <div 
       className={`relative ${className} ${isMultiSelectMode ? 'cursor-pointer' : ''}`}
@@ -44,7 +51,7 @@ const SelectableItem = ({
     >
       {isMultiSelectMode && (
         <div 
-          className={`absolute -top-1 -right-1 w-5 h-5 rounded-full z-20 border-2 border-gray-800 
+          className={`absolute ${positionClass} w-5 h-5 rounded-full z-10 border-2 border-gray-800 
           ${isSelected ? 'bg-indigo-500' : 'bg-gray-600'}`}
         >
           {isSelected && (
