@@ -6,12 +6,19 @@ interface SelectableItemProps {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
+  forceSelected?: boolean;
 }
 
 /**
  * A wrapper component that adds selection capabilities to items in multi-select mode
  */
-const SelectableItem = ({ partId, children, className = "", onClick }: SelectableItemProps) => {
+const SelectableItem = ({ 
+  partId, 
+  children, 
+  className = "", 
+  onClick,
+  forceSelected = false
+}: SelectableItemProps) => {
   const { 
     isMultiSelectMode, 
     isPartSelected, 
@@ -27,7 +34,8 @@ const SelectableItem = ({ partId, children, className = "", onClick }: Selectabl
     if (onClick) onClick();
   };
 
-  const isSelected = isMultiSelectMode && isPartSelected(partId);
+  // Use forceSelected prop or check if part is selected
+  const isSelected = forceSelected || (isMultiSelectMode && isPartSelected(partId));
 
   return (
     <div 

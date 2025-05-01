@@ -180,8 +180,10 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         );
     }, [selectedParts]);
 
+    // Modified to enforce "one part per subcategory" rule
     const togglePartSelection = useCallback((partId: PartIdentifier) => {
         setSelectedParts(prev => {
+            // Check if this part is already selected
             const isAlreadySelected = prev.some(p => 
                 p.mode === partId.mode && 
                 p.part === partId.part && 
@@ -189,11 +191,33 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
             );
             
             if (isAlreadySelected) {
+                // If selected, remove it
                 return prev.filter(p => 
-                    !(p.mode === partId.mode && p.part === partId.part && p.subcategory === partId.subcategory)
+                    !(p.mode === partId.mode && 
+                      p.part === partId.part && 
+                      p.subcategory === partId.subcategory)
                 );
             } else {
-                return [...prev, partId];
+                // Extract the base subcategory without model ID
+                const baseSubcategory = partId.subcategory.includes('-') 
+                    ? partId.subcategory.split('-')[0] 
+                    : partId.subcategory;
+                
+                // Remove any existing selection from the same part+subcategory combination
+                const filteredParts = prev.filter(p => {
+                    // Extract the base subcategory for comparison
+                    const pBaseSubcategory = p.subcategory.includes('-') 
+                        ? p.subcategory.split('-')[0] 
+                        : p.subcategory;
+                    
+                    // Keep if it's not the same part type or base subcategory
+                    return !(p.mode === partId.mode && 
+                           p.part === partId.part && 
+                           pBaseSubcategory === baseSubcategory);
+                });
+                
+                // Add the new selection
+                return [...filteredParts, partId];
             }
         });
     }, []);

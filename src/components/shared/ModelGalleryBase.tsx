@@ -14,9 +14,7 @@ export interface ModelGalleryBaseProps {
   onSelectModel: (modelId: string) => void;
   emptyStateMessage?: string;
   selectionColor?: string;
-  // No longer applying default colors to SVGs
   preserveOriginalColors?: boolean;
-  // For multi-select mode
   partType?: string; 
   subcategory?: string;
 }
@@ -34,7 +32,7 @@ export default function ModelGalleryBase({
   partType = '',
   subcategory = 'default'
 }: ModelGalleryBaseProps) {
-  const { emojiType, isMultiSelectMode } = useEmojiCustomization();
+  const { emojiType, isMultiSelectMode, selectedParts } = useEmojiCustomization();
   
   // Check if there are any models to display
   if (models.length === 0) {
@@ -45,17 +43,41 @@ export default function ModelGalleryBase({
     );
   }
   
+  // Helper to check if any part is selected from this subcategory in multi-select mode
+  const getSelectedPartFromSubcategory = () => {
+    if (!isMultiSelectMode) return null;
+    
+    // Find if any part with this part+subcategory base is already selected
+    return selectedParts.find(p => {
+      // Check if this part matches the current part type
+      if (p.mode !== emojiType || p.part !== partType) {
+        return false;
+      }
+      
+      // Extract base subcategory (without model ID) for comparison
+      const pBaseSubcategory = p.subcategory.includes('-') 
+          ? p.subcategory.split('-')[0] 
+          : p.subcategory;
+          
+      return pBaseSubcategory === subcategory;
+    });
+  };
+  
+  // Get the model ID from the selected part, if any
+  const selectedPartInSubcategory = getSelectedPartFromSubcategory();
+  const selectedModelIdFromMultiSelect = selectedPartInSubcategory?.subcategory?.split('-')[1];
+  
   return (
     <div className="grid grid-cols-5 gap-2 overflow-y-auto overflow-x-hidden p-1 h-48 items-center justify-center custom-scrollbar">
       {models.map((model) => {
+        // Model is selected if it's the active model in regular mode
         const isSelected = selectedModelId === model.id;
         
-        // Create a unique part identifier for each model by including the model ID
-        // This ensures each model in a subcategory is uniquely selectable
+        // Create a unique part identifier for each model
         const partId: PartIdentifier = {
           mode: emojiType,
           part: partType,
-          subcategory: `${subcategory}-${model.id}`  // Make identifier unique per model
+          subcategory: `${subcategory}-${model.id}`
         };
         
         const modelButton = (
@@ -73,19 +95,22 @@ export default function ModelGalleryBase({
                 width="48"
                 height="48"
                 className="w-full h-full max-w-full max-h-full"
-                // No fill prop - let SVG use its original colors
               />
             </div>
           </button>
         );
         
-        // In multi-select mode, wrap buttons with SelectableItem
+        // In multi-select mode, only show selection indicator for this model
+        // if it's the selected model in this subcategory
+        const showSelectionIndicator = isMultiSelectMode && model.id === selectedModelIdFromMultiSelect;
+        
         return (
           <div key={model.id} className="relative">
             {partType && isMultiSelectMode ? (
               <SelectableItem
                 partId={partId}
                 onClick={() => onSelectModel(model.id)}
+                forceSelected={showSelectionIndicator}
               >
                 {modelButton}
               </SelectableItem>
