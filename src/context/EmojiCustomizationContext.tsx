@@ -2,6 +2,7 @@ import { createContext, useState, useCallback, useContext, ReactNode } from 'rea
 import { ModelIdType } from '../data/modelTypes';
 import { EmojiPartType } from '../data/emoji/emojiModels';
 import { StickerPartType, StickerSubcategoryType, subcategories } from '../data/sticker/stickerModels';
+import { canvasConfig, getAdaptiveScale } from '../utils/canvasConfig';
 
 export type EmojiType = 'emoji' | 'sticker';
 
@@ -12,13 +13,11 @@ interface Transform {
     color: string;
 }
 
-// Use relative positioning (0.5, 0.5) for the center instead of fixed values
-// The actual pixel values will be calculated in the canvas components
 const defaultTransform: Transform = {
     position: { x: 0.5, y: 0.5 }, // Center position as a ratio (0.5, 0.5 = center)
     rotation: 0,
-    size: { x: 200, y: 200 },
-    color: "#FFFFFF" 
+    size: { x: 100, y: 100 }, // Base size percentage (will be combined with adaptive scaling)
+    color: canvasConfig.defaultColor
 };
 
 interface EmojiCustomizationContextType {

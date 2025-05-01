@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Image } from 'react-konva';
 import ReactDOMServer from 'react-dom/server';
+import { canvasConfig } from '../../utils/canvasConfig';
 
 interface KonvaSvgRendererProps {
   svgComponent: React.FC<any>;
@@ -11,12 +12,12 @@ interface KonvaSvgRendererProps {
   scaleY: number;
   fill?: string;
   zIndex?: number;
-  canvasSize?: number;
+  canvasSize: number; // Now required to properly calculate adaptive sizing
 }
 
 /**
  * Renders SVG components in Konva by converting them to Image objects
- * Automatically handles proper positioning and centering
+ * Automatically handles proper positioning and centering with adaptive sizing
  */
 const KonvaSvgRenderer: React.FC<KonvaSvgRendererProps> = ({
   svgComponent: SvgComponent,
@@ -30,11 +31,12 @@ const KonvaSvgRenderer: React.FC<KonvaSvgRendererProps> = ({
   canvasSize
 }) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const originalSize = 100; // The original SVG size we set (100x100)
+  
+  // Use the base SVG size from the centralized config
+  const originalSize = canvasConfig.baseSvgSize;
   const halfOriginalSize = originalSize / 2;
   
   // Create a ref to store the image dimensions after loading
-  // This will help with proper centering
   const imageDimensionsRef = useRef({ width: originalSize, height: originalSize });
   
   useEffect(() => {
@@ -44,7 +46,8 @@ const KonvaSvgRenderer: React.FC<KonvaSvgRendererProps> = ({
     svg.setAttribute("height", originalSize.toString());
     svg.setAttribute("viewBox", `0 0 ${originalSize} ${originalSize}`);
     
-    const svgProps = fill && fill !== "#FFFFFF" ? { fill } : {};
+    // Only pass fill if it's not the default white color
+    const svgProps = fill && fill !== canvasConfig.defaultColor ? { fill } : {};
     const svgString = ReactDOMServer.renderToString(<SvgComponent {...svgProps} />);
     svg.innerHTML = svgString;
     

@@ -4,6 +4,7 @@ import { useEmojiCustomization } from '../../context/EmojiCustomizationContext';
 import { findStickerModel } from '../../data/sticker/stickerModels';
 import KonvaSvgRenderer from '../shared/KonvaSvgRenderer';
 import BaseCanvas from '../shared/BaseCanvas';
+import { getAdaptiveScale } from '../../utils/canvasConfig';
 
 /**
  * Canvas component for rendering sticker characters using Konva
@@ -37,7 +38,7 @@ function StickerCanvas() {
   
   const hasAnyModels = faceModel || eyeShapeModel || eyebrowsModel || hairModel || mouthModel || othersModel;
   
-  // Helper for rendering a model with the right transform
+  // Helper for rendering a model with adaptive scaling
   const renderModelWithTransform = (part: string, subcategory: string, model: any, canvasSize: number) => {
     if (!model) return null;
     
@@ -47,6 +48,9 @@ function StickerCanvas() {
     // Convert relative position (0-1) to absolute canvas position
     const pixelX = transform.position.x * canvasSize;
     const pixelY = transform.position.y * canvasSize;
+
+    // Calculate the adaptive scale factor based on canvas size
+    const adaptiveScale = getAdaptiveScale(canvasSize);
     
     return (
       <KonvaSvgRenderer
@@ -55,8 +59,9 @@ function StickerCanvas() {
         x={pixelX}
         y={pixelY}
         rotation={transform.rotation}
-        scaleX={transform.size.x / 100}
-        scaleY={transform.size.y / 100}
+        // Apply both the user's size setting and the adaptive scale
+        scaleX={(transform.size.x / 100) * adaptiveScale}
+        scaleY={(transform.size.y / 100) * adaptiveScale}
         fill={transform.color}
         canvasSize={canvasSize}
       />
