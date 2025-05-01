@@ -11,7 +11,7 @@ interface KonvaSvgRendererProps {
   scaleY: number;
   fill?: string;
   zIndex?: number;
-  canvasSize?: number; // Optional prop to receive canvas size
+  canvasSize?: number;
 }
 
 /**
@@ -44,7 +44,8 @@ const KonvaSvgRenderer: React.FC<KonvaSvgRendererProps> = ({
     svg.setAttribute("height", originalSize.toString());
     svg.setAttribute("viewBox", `0 0 ${originalSize} ${originalSize}`);
     
-    const svgString = ReactDOMServer.renderToString(<SvgComponent fill={fill} />);
+    const svgProps = fill && fill !== "#FFFFFF" ? { fill } : {};
+    const svgString = ReactDOMServer.renderToString(<SvgComponent {...svgProps} />);
     svg.innerHTML = svgString;
     
     // Convert SVG to image
