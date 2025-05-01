@@ -42,6 +42,7 @@ interface EmojiCustomizationContextType {
     toggleMultiSelectMode: () => void;
     selectedParts: PartIdentifier[];
     togglePartSelection: (partId: PartIdentifier) => void;
+    removePartSelection: (partId: PartIdentifier) => void;  // New function to remove selection
     clearSelectedParts: () => void;
     isPartSelected: (partId: PartIdentifier) => boolean;
     
@@ -222,6 +223,16 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         });
     }, []);
 
+    const removePartSelection = useCallback((partId: PartIdentifier) => {
+        setSelectedParts(prev => 
+            prev.filter(p => 
+                !(p.mode === partId.mode && 
+                  p.part === partId.part && 
+                  p.subcategory === partId.subcategory)
+            )
+        );
+    }, []);
+
     const clearSelectedParts = useCallback(() => {
         setSelectedParts([]);
     }, []);
@@ -341,11 +352,28 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     }, [isMultiSelectMode, clearSelectedParts]);
     
     const setSelectedEmojiModel = useCallback((part: EmojiPartType, modelId: ModelIdType | null) => {
-        _setSelectedEmojiModels(prev => ({
-            ...prev,
-            [part]: modelId
-        }));
-    }, []);
+        _setSelectedEmojiModels(prev => {
+            // In multi-select mode, don't toggle - just update the model
+            if (isMultiSelectMode) {
+                return {
+                    ...prev,
+                    [part]: modelId
+                };
+            }
+            
+            // In single-select mode, toggle behavior
+            if (prev[part] === modelId) {
+                return {
+                    ...prev,
+                    [part]: null
+                };
+            }
+            return {
+                ...prev,
+                [part]: modelId
+            };
+        });
+    }, [isMultiSelectMode]);
     
     const setSelectedStickerPart = useCallback((part: StickerPartType) => {
         _setSelectedStickerPart(part);
@@ -368,14 +396,37 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
     }, [isMultiSelectMode, clearSelectedParts]);
     
     const setSelectedStickerModel = useCallback((part: StickerPartType, subcategory: StickerSubcategoryType, modelId: ModelIdType | null) => {
-        _setSelectedStickerModels(prev => ({
-            ...prev,
-            [part]: {
-                ...prev[part],
-                [subcategory]: modelId
+        _setSelectedStickerModels(prev => {
+            // In multi-select mode, don't toggle - just update the model
+            if (isMultiSelectMode) {
+                return {
+                    ...prev,
+                    [part]: {
+                        ...prev[part],
+                        [subcategory]: modelId
+                    }
+                };
             }
-        }));
-    }, []);
+            
+            // In single-select mode, toggle behavior
+            if (prev[part]?.[subcategory] === modelId) {
+                return {
+                    ...prev,
+                    [part]: {
+                        ...prev[part],
+                        [subcategory]: null
+                    }
+                };
+            }
+            return {
+                ...prev,
+                [part]: {
+                    ...prev[part],
+                    [subcategory]: modelId
+                }
+            };
+        });
+    }, [isMultiSelectMode]);
     
     // Legacy setter for backward compatibility
     const setSelectedHeadModel = useCallback((modelId: ModelIdType) => {
@@ -400,6 +451,7 @@ export const EmojiCustomizationProvider: React.FC<EmojiCustomizationProviderProp
         toggleMultiSelectMode,
         selectedParts,
         togglePartSelection,
+        removePartSelection,
         clearSelectedParts,
         isPartSelected,
         
