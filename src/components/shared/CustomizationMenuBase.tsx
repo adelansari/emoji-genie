@@ -244,21 +244,26 @@ export default function CustomizationMenuBase({
       {/* Navigation tabs */}
       {navigationTabs}
       
-      {/* Selection status and clear button */}
-      {isMultiSelectMode && selectedParts.length > 0 && (
+      {/* Selection status and clear button - show even when no parts are selected in multi-select mode */}
+      {isMultiSelectMode && (
         <div className="flex items-center justify-between bg-indigo-900/30 p-2 rounded-md border border-indigo-700/30">
           <div className="flex items-center gap-2">
             <CheckSquare size={16} className="text-indigo-400" />
             <span className="text-sm text-indigo-200">
-              {selectedParts.length} part{selectedParts.length === 1 ? '' : 's'} selected
+              {selectedParts.length > 0
+                ? `${selectedParts.length} part${selectedParts.length === 1 ? '' : 's'} selected`
+                : "Select a part"
+              }
             </span>
           </div>
-          <button 
-            onClick={clearSelectedParts}
-            className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded"
-          >
-            Clear
-          </button>
+          {selectedParts.length > 0 && (
+            <button 
+              onClick={clearSelectedParts}
+              className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded"
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
       
