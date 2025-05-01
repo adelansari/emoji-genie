@@ -1,20 +1,9 @@
-import { memo, useState, useEffect, useMemo } from 'react';
-import { Stage, Layer, Rect, Text } from 'react-konva';
+import { memo, useMemo } from 'react';
+import { Layer, Text } from 'react-konva';
 import { useEmojiCustomization } from '../../context/EmojiCustomizationContext';
 import { findEmojiModel } from '../../data/emoji/emojiModels';
 import KonvaSvgRenderer from '../shared/KonvaSvgRenderer';
-
-// Function to calculate responsive size
-const getResponsiveCanvasSize = () => {
-  const padding = 32; // Corresponds to p-4 on App container, adjust if needed
-  const availableWidth = window.innerWidth - padding;
-  const availableHeight = window.innerHeight * 0.6; // Allow space for controls below/beside
-  const maxSize = 600; // Max size on desktop
-  const minSize = 300; // Min size on mobile
-  
-  // Use Math.min for square canvas fitting available space, respecting min/max
-  return Math.max(minSize, Math.min(maxSize, availableWidth, availableHeight));
-};
+import BaseCanvas from '../shared/BaseCanvas';
 
 /**
  * Canvas component for rendering emoji models using Konva
@@ -24,18 +13,6 @@ function EmojiCanvas() {
     getTransform,
     selectedEmojiModels
   } = useEmojiCustomization();
-
-  const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
-
-  useEffect(() => {
-    const handleResize = () => {
-      setCanvasSize(getResponsiveCanvasSize());
-    };
-    window.addEventListener('resize', handleResize);
-    // Initial call in case dimensions change before listener attaches
-    handleResize(); 
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   
   // For emoji mode, use the head model
   const headModel = useMemo(() => findEmojiModel('head', selectedEmojiModels.head || 'default'), [selectedEmojiModels.head]);
@@ -44,25 +21,8 @@ function EmojiCanvas() {
   const headTransform = getTransform('emoji', 'head', 'default');
 
   return (
-    <div
-      id="emoji-canvas-container"
-      className="bg-gray-700 rounded-lg shadow-xl overflow-hidden relative"
-      style={{ width: canvasSize, height: canvasSize }} // Set container size
-    >
-      <Stage
-        width={canvasSize}
-        height={canvasSize}
-      >
-        {/* Canvas background */}
-        <Layer>
-          <Rect
-            width={canvasSize}
-            height={canvasSize}
-            fill="#555"
-          />
-        </Layer>
-
-        {/* Emoji parts layer */}
+    <BaseCanvas containerId="emoji-canvas-container" backgroundColor="#555">
+      {(canvasSize) => (
         <Layer>
           {headModel ? (
             <KonvaSvgRenderer
@@ -78,10 +38,10 @@ function EmojiCanvas() {
           ) : (
             <Text
               text={`Head model not found: ${selectedEmojiModels.head}`}
-              x={canvasSize / 2} // Center text based on dynamic size
+              x={canvasSize / 2}
               y={50}
-              width={canvasSize * 0.8} // Adjust width based on dynamic size
-              offsetX={(canvasSize * 0.8) / 2} // Center align offset
+              width={canvasSize * 0.8}
+              offsetX={(canvasSize * 0.8) / 2}
               align="center"
               fill="white"
               fontSize={16}
@@ -90,8 +50,8 @@ function EmojiCanvas() {
           
           {/* Add other emoji parts here when implemented */}
         </Layer>
-      </Stage>
-    </div>
+      )}
+    </BaseCanvas>
   );
 }
 

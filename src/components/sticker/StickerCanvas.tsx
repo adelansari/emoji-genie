@@ -1,18 +1,9 @@
-import { memo, useState, useEffect, useMemo } from 'react';
-import { Stage, Layer, Rect, Text } from 'react-konva';
+import { memo, useMemo } from 'react';
+import { Layer, Text } from 'react-konva';
 import { useEmojiCustomization } from '../../context/EmojiCustomizationContext';
 import { findStickerModel } from '../../data/sticker/stickerModels';
 import KonvaSvgRenderer from '../shared/KonvaSvgRenderer';
-
-// Function to calculate responsive size (same as in EmojiCanvas)
-const getResponsiveCanvasSize = () => {
-  const padding = 32; 
-  const availableWidth = window.innerWidth - padding;
-  const availableHeight = window.innerHeight * 0.6; 
-  const maxSize = 600; 
-  const minSize = 300; 
-  return Math.max(minSize, Math.min(maxSize, availableWidth, availableHeight));
-};
+import BaseCanvas from '../shared/BaseCanvas';
 
 /**
  * Canvas component for rendering sticker characters using Konva
@@ -24,20 +15,6 @@ function StickerCanvas() {
     selectedStickerPart,
     selectedStickerSubcategory
   } = useEmojiCustomization();
-
-  const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
-
-  useEffect(() => {
-    const handleResize = () => {
-      setCanvasSize(getResponsiveCanvasSize());
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Initial call
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Calculate the center of the canvas
-  const canvasCenter = canvasSize / 2;
 
   // Retrieve selected models for all categories and subcategories
   const faceModel = useMemo(() => selectedStickerModels.face?.shape ? 
@@ -61,7 +38,7 @@ function StickerCanvas() {
   const hasAnyModels = faceModel || eyeShapeModel || eyebrowsModel || hairModel || mouthModel || othersModel;
   
   // Helper for rendering a model with the right transform
-  const renderModelWithTransform = (part: string, subcategory: string, model: any) => {
+  const renderModelWithTransform = (part: string, subcategory: string, model: any, canvasSize: number) => {
     if (!model) return null;
     
     // Get the transform for this part and subcategory
@@ -87,33 +64,16 @@ function StickerCanvas() {
   };
   
   return (
-    <div
-      id="sticker-canvas-container"
-      className="bg-gray-700 rounded-lg shadow-xl overflow-hidden relative"
-      style={{ width: canvasSize, height: canvasSize }} // Set container size
-    >
-      <Stage
-        width={canvasSize}
-        height={canvasSize}
-      >
-        {/* Canvas background */}
-        <Layer>
-          <Rect
-            width={canvasSize}
-            height={canvasSize}
-            fill="#444"
-          />
-        </Layer>
-        
-        {/* Sticker parts layer */}
+    <BaseCanvas containerId="sticker-canvas-container" backgroundColor="#444">
+      {(canvasSize) => (
         <Layer>
           {/* Render order matters - hair behind face, face before eyes, etc. */}
-          {hairModel && renderModelWithTransform('hair', 'default', hairModel)}
-          {faceModel && renderModelWithTransform('face', 'shape', faceModel)}
-          {mouthModel && renderModelWithTransform('face', 'mouth', mouthModel)}
-          {eyeShapeModel && renderModelWithTransform('eyes', 'eyeShape', eyeShapeModel)}
-          {eyebrowsModel && renderModelWithTransform('eyes', 'eyebrows', eyebrowsModel)}
-          {othersModel && renderModelWithTransform('others', 'default', othersModel)}
+          {hairModel && renderModelWithTransform('hair', 'default', hairModel, canvasSize)}
+          {faceModel && renderModelWithTransform('face', 'shape', faceModel, canvasSize)}
+          {mouthModel && renderModelWithTransform('face', 'mouth', mouthModel, canvasSize)}
+          {eyeShapeModel && renderModelWithTransform('eyes', 'eyeShape', eyeShapeModel, canvasSize)}
+          {eyebrowsModel && renderModelWithTransform('eyes', 'eyebrows', eyebrowsModel, canvasSize)}
+          {othersModel && renderModelWithTransform('others', 'default', othersModel, canvasSize)}
           
           {!hasAnyModels && (
             <Text
@@ -128,8 +88,8 @@ function StickerCanvas() {
             />
           )}
         </Layer>
-      </Stage>
-    </div>
+      )}
+    </BaseCanvas>
   );
 }
 
