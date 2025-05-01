@@ -7,7 +7,6 @@ import ModelGalleryBase from "../shared/ModelGalleryBase";
  */
 export default function EmojiModelGallery() {
   const {
-    emojiType,
     selectedEmojiPart,
     selectedEmojiModels,
     setSelectedEmojiModel
@@ -21,11 +20,6 @@ export default function EmojiModelGallery() {
       selectedModelId={selectedEmojiModels[selectedEmojiPart]}
       onSelectModel={(modelId) => setSelectedEmojiModel(selectedEmojiPart, modelId)}
       emptyStateMessage={`Models for ${selectedEmojiPart} not yet available.`}
-      partIdentifier={{
-        mode: emojiType,
-        part: selectedEmojiPart,
-        subcategory: 'default'
-      }}
     />
   );
 }

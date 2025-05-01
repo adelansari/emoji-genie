@@ -8,7 +8,6 @@ import ModelGalleryBase from "../shared/ModelGalleryBase";
  */
 export default function StickerModelGallery() {
   const {
-    emojiType,
     selectedStickerPart,
     selectedStickerSubcategory,
     selectedStickerModels,
@@ -27,11 +26,6 @@ export default function StickerModelGallery() {
       selectedModelId={selectedModelId}
       onSelectModel={(modelId) => setSelectedStickerModel(selectedStickerPart, selectedStickerSubcategory, modelId)}
       emptyStateMessage={`No models available for this option.`}
-      partIdentifier={{
-        mode: emojiType,
-        part: selectedStickerPart,
-        subcategory: selectedStickerSubcategory
-      }}
     />
   );
 }

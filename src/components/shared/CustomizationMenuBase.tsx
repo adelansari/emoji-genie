@@ -3,10 +3,8 @@ import JoystickController from "./JoystickController";
 import SizeControlSimple from "./SizeControlSimple";
 import RotationJoystick from "./RotationJoystick";
 import ColorPicker from "./ColorPicker";
-import MultiSelectToggle from "./MultiSelectToggle";
 import { exportElementAsImage, saveImageToLocalStorage, downloadImage } from "../../utils/exportUtils";
-import { Save, Download, SlidersHorizontal, X, CheckSquare } from "lucide-react";
-import { useEmojiCustomization, PartIdentifier } from "../../context/EmojiCustomizationContext";
+import { Save, Download, SlidersHorizontal, X } from "lucide-react";
 
 export type EditMode = "none" | "position" | "size" | "rotation" | "color";
 export const EDIT_MODES: EditMode[] = ["position", "size", "rotation", "color"];
@@ -70,16 +68,6 @@ export default function CustomizationMenuBase({
   const [isAdjustDrawerOpen, setIsAdjustDrawerOpen] = useState(false);
   const [drawerAnimation, setDrawerAnimation] = useState<'entering' | 'entered' | 'exiting' | 'exited'>('exited');
   const drawerTimeoutRef = useRef<number | null>(null);
-  
-  // Get multi-select functionality from context
-  const { emojiType, isMultiSelectMode, selectedParts, togglePartSelection, isPartSelected } = useEmojiCustomization();
-  
-  // Part identifier for the current part
-  const currentPartIdentifier: PartIdentifier = {
-    mode: emojiType,
-    part: selectedPart,
-    subcategory: selectedSubcategory || 'default'
-  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -215,11 +203,6 @@ export default function CustomizationMenuBase({
   const subcatName = selectedSubcategory ? formatPartName(selectedSubcategory) : '';
   const displayTitle = selectedSubcategory && selectedSubcategory !== 'default' ? 
     `Adjust ${subcatName} (${partName})` : `Adjust ${partName}`;
-    
-  // Handle toggling selection of current part in multi-select mode
-  const handleToggleSelection = () => {
-    togglePartSelection(currentPartIdentifier);
-  };
 
   return (
     <div className="flex-shrink-0 w-full md:w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-4 flex flex-col gap-4 text-white relative md:static">
@@ -228,27 +211,6 @@ export default function CustomizationMenuBase({
       
       {/* Subcategory tabs (if provided) */}
       {subcategoryTabs}
-      
-      {/* Multi-select toggle */}
-      <div className="flex items-center justify-between">
-        <MultiSelectToggle />
-        
-        {/* Show selection toggle when in multi-select mode */}
-        {isMultiSelectMode && (
-          <button
-            onClick={handleToggleSelection}
-            className={`flex items-center gap-1 py-1 px-2 rounded text-xs font-medium transition-colors duration-150 ${
-              isPartSelected(emojiType, selectedPart, selectedSubcategory || 'default')
-                ? "bg-green-600 text-white"
-                : "bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white"
-            }`}
-            title={isPartSelected(emojiType, selectedPart, selectedSubcategory || 'default') ? "Deselect this part" : "Select this part"}
-          >
-            <CheckSquare size={14} />
-            <span>{isPartSelected(emojiType, selectedPart, selectedSubcategory || 'default') ? "Selected" : "Select"}</span>
-          </button>
-        )}
-      </div>
 
       {/* Gallery container */}
       <div className="bg-gray-900/50 rounded-md p-2 min-h-[100px]">
@@ -260,9 +222,7 @@ export default function CustomizationMenuBase({
         {/* Add header to match mobile drawer experience */}
         <div className="mb-3 px-2 flex items-center justify-between">
           <h3 className={`text-lg font-semibold text-${accentColor}-300`}>
-            {isMultiSelectMode && selectedParts.length > 0 
-              ? `Adjust ${selectedParts.length} selected parts` 
-              : displayTitle}
+            {displayTitle}
           </h3>
           <button
             onClick={() => setMode("none")}
@@ -330,9 +290,7 @@ export default function CustomizationMenuBase({
           {/* Drawer Header */}
           <div className="flex justify-between items-center mb-2">
             <h3 className={`text-lg font-semibold text-indigo-300`}>
-              {isMultiSelectMode && selectedParts.length > 0 
-                ? `Adjust ${selectedParts.length} selected parts` 
-                : displayTitle}
+              {displayTitle}
             </h3>
             <button onClick={handleCloseDrawer} className="p-1 text-gray-400 hover:text-white">
               <X size={20} />
