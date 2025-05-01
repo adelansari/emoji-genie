@@ -15,10 +15,14 @@ export default function StickerModelGallery() {
   } = useEmojiCustomization();
 
   // Get models for the current part and subcategory
-  const currentModels = stickerModels[selectedStickerPart][selectedStickerSubcategory];
+  const currentModels = selectedStickerPart
+    ? stickerModels[selectedStickerPart][selectedStickerSubcategory]
+    : null;
   
   // Get the currently selected model ID for this part and subcategory
-  const selectedModelId = selectedStickerModels[selectedStickerPart]?.[selectedStickerSubcategory];
+  const selectedModelId = selectedStickerPart
+    ? selectedStickerModels[selectedStickerPart]?.[selectedStickerSubcategory]
+    : null;
   
   return (
     <ModelGalleryBase
