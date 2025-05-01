@@ -3,8 +3,10 @@ import JoystickController from "./JoystickController";
 import SizeControlSimple from "./SizeControlSimple";
 import RotationJoystick from "./RotationJoystick";
 import ColorPicker from "./ColorPicker";
+import MultiSelectToggle from "./MultiSelectToggle";
 import { exportElementAsImage, saveImageToLocalStorage, downloadImage } from "../../utils/exportUtils";
-import { Save, Download, SlidersHorizontal, X } from "lucide-react";
+import { Save, Download, SlidersHorizontal, X, CheckSquare } from "lucide-react";
+import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 
 export type EditMode = "none" | "position" | "size" | "rotation" | "color";
 export const EDIT_MODES: EditMode[] = ["position", "size", "rotation", "color"];
@@ -59,6 +61,12 @@ export default function CustomizationMenuBase({
   isColorDisabled = () => false,
   downloadFilePrefix = "emoji-genie"
 }: CustomizationMenuBaseProps) {
+  const { 
+    isMultiSelectMode,
+    selectedParts,
+    clearSelectedParts
+  } = useEmojiCustomization();
+  
   const [mode, setMode] = useState<EditMode>("none");
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle');
@@ -81,15 +89,17 @@ export default function CustomizationMenuBase({
     };
   }, []);
 
-  // Close drawer when switching parts
+  // Close drawer when switching parts and not in multi-select mode
   useEffect(() => {
-    setMode('none'); // Reset mode when part changes
-    
-    // Close drawer on part change with animation
-    if (isAdjustDrawerOpen) {
-      handleCloseDrawer();
+    if (!isMultiSelectMode) {
+      setMode('none'); // Reset mode when part changes in single-select mode
+      
+      // Close drawer on part change with animation
+      if (isAdjustDrawerOpen) {
+        handleCloseDrawer();
+      }
     }
-  }, [selectedPart, selectedSubcategory]);
+  }, [selectedPart, selectedSubcategory, isMultiSelectMode]);
 
   // Handle opening drawer with animation
   const handleOpenDrawer = () => {
@@ -140,7 +150,10 @@ export default function CustomizationMenuBase({
         return (
           <div className="flex items-center justify-center h-full min-h-[200px]">
             <p className="text-gray-400 text-sm text-center">
-              Select a customization option above
+              {isMultiSelectMode 
+                ? "Select parts to customize, then choose an adjustment option above" 
+                : "Select a customization option above"
+              }
             </p>
           </div>
         );
@@ -201,13 +214,53 @@ export default function CustomizationMenuBase({
   // Get part name for display
   const partName = formatPartName(selectedPart);
   const subcatName = selectedSubcategory ? formatPartName(selectedSubcategory) : '';
-  const displayTitle = selectedSubcategory && selectedSubcategory !== 'default' ? 
-    `Adjust ${subcatName} (${partName})` : `Adjust ${partName}`;
+  
+  // Generate appropriate title based on selection mode
+  const getDisplayTitle = () => {
+    if (isMultiSelectMode) {
+      if (selectedParts.length === 0) {
+        return "Select parts to customize";
+      } else {
+        return `Adjust ${selectedParts.length} selected part${selectedParts.length === 1 ? '' : 's'}`;
+      }
+    } else {
+      // Original single-selection title
+      return selectedSubcategory && selectedSubcategory !== 'default' 
+        ? `Adjust ${subcatName} (${partName})`
+        : `Adjust ${partName}`;
+    }
+  };
+  
+  const displayTitle = getDisplayTitle();
 
   return (
     <div className="flex-shrink-0 w-full md:w-96 bg-gray-800/70 backdrop-blur-md rounded-lg border border-gray-700/50 shadow-xl p-4 flex flex-col gap-4 text-white relative md:static">
+      {/* Add multi-select toggle above navigation tabs */}
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <MultiSelectToggle />
+      </div>
+      
       {/* Navigation tabs */}
       {navigationTabs}
+      
+      {/* Selection status and clear button */}
+      {isMultiSelectMode && selectedParts.length > 0 && (
+        <div className="flex items-center justify-between bg-indigo-900/30 p-2 rounded-md border border-indigo-700/30">
+          <div className="flex items-center gap-2">
+            <CheckSquare size={16} className="text-indigo-400" />
+            <span className="text-sm text-indigo-200">
+              {selectedParts.length} part{selectedParts.length === 1 ? '' : 's'} selected
+            </span>
+          </div>
+          <button 
+            onClick={clearSelectedParts}
+            className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded"
+          >
+            Clear
+          </button>
+        </div>
+      )}
       
       {/* Subcategory tabs (if provided) */}
       {subcategoryTabs}
@@ -243,15 +296,21 @@ export default function CustomizationMenuBase({
               <button
                 key={editMode}
                 onClick={() => !disabled && handleSelectMode(editMode)}
-                disabled={disabled}
+                disabled={disabled || (isMultiSelectMode && selectedParts.length === 0)}
                 className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize
                   ${isActive
                     ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
-                    : disabled
+                    : disabled || (isMultiSelectMode && selectedParts.length === 0)
                       ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                       : "bg-gray-700/60 hover:bg-gray-600/80"
                   }`}
-                title={disabled ? "This adjustment is not available for this element" : undefined}
+                title={
+                  disabled 
+                    ? "This adjustment is not available for this element" 
+                    : isMultiSelectMode && selectedParts.length === 0
+                    ? "Select at least one part first"
+                    : undefined
+                }
               >
                 {editMode}
               </button>
@@ -269,10 +328,20 @@ export default function CustomizationMenuBase({
       <div className="md:hidden flex justify-center mt-2"> {/* Show only on mobile */}
         <button 
           onClick={handleOpenDrawer}
-          className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-md text-white font-medium flex items-center justify-center gap-2 shadow-md"
+          disabled={isMultiSelectMode && selectedParts.length === 0}
+          className={`w-full py-2 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 shadow-md ${
+            isMultiSelectMode && selectedParts.length === 0
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700"
+          }`}
         >
           <SlidersHorizontal size={18} />
-          Adjust Details
+          {isMultiSelectMode
+            ? selectedParts.length > 0
+              ? `Adjust ${selectedParts.length} Selected Part${selectedParts.length > 1 ? 's' : ''}`
+              : "Select Parts First"
+            : "Adjust Details"
+          }
         </button>
       </div>
 
@@ -307,15 +376,21 @@ export default function CustomizationMenuBase({
                 <button
                   key={editMode}
                   onClick={() => !disabled && handleSelectMode(editMode)}
-                  disabled={disabled}
+                  disabled={disabled || (isMultiSelectMode && selectedParts.length === 0)}
                   className={`py-2 px-3 rounded text-sm font-medium transition-colors duration-150 capitalize
                     ${isActive
                       ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
-                      : disabled
+                      : disabled || (isMultiSelectMode && selectedParts.length === 0)
                         ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                         : "bg-gray-700/60 hover:bg-gray-600/80"
                     }`}
-                  title={disabled ? "This adjustment is not available for this element" : undefined}
+                  title={
+                    disabled 
+                      ? "This adjustment is not available for this element" 
+                      : isMultiSelectMode && selectedParts.length === 0
+                      ? "Select at least one part first"
+                      : undefined
+                  }
                 >
                   {editMode}
                 </button>

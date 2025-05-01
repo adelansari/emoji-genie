@@ -20,6 +20,8 @@ export default function EmojiModelGallery() {
       selectedModelId={selectedEmojiModels[selectedEmojiPart]}
       onSelectModel={(modelId) => setSelectedEmojiModel(selectedEmojiPart, modelId)}
       emptyStateMessage={`Models for ${selectedEmojiPart} not yet available.`}
+      partType={selectedEmojiPart}
+      subcategory="default"
     />
   );
 }

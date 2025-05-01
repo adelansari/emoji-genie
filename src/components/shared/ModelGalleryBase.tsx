@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { useEmojiCustomization, PartIdentifier } from "../../context/EmojiCustomizationContext";
+import SelectableItem from "./SelectableItem";
 
 export interface ModelItem {
   id: string;
@@ -14,6 +16,9 @@ export interface ModelGalleryBaseProps {
   selectionColor?: string;
   // No longer applying default colors to SVGs
   preserveOriginalColors?: boolean;
+  // For multi-select mode
+  partType?: string; 
+  subcategory?: string;
 }
 
 /**
@@ -25,8 +30,12 @@ export default function ModelGalleryBase({
   onSelectModel,
   emptyStateMessage = "No models available.",
   selectionColor = '#FACC15', // Yellow for selection highlighting only
-  preserveOriginalColors = true
+  preserveOriginalColors = true,
+  partType = '',
+  subcategory = 'default'
 }: ModelGalleryBaseProps) {
+  const { emojiType, isMultiSelectMode } = useEmojiCustomization();
+  
   // Check if there are any models to display
   if (models.length === 0) {
     return (
@@ -41,12 +50,16 @@ export default function ModelGalleryBase({
       {models.map((model) => {
         const isSelected = selectedModelId === model.id;
         
-        // No longer applying any fill color by default
-        // This preserves the original SVG colors intended by the designer
+        // Create a unique part identifier for each model by including the model ID
+        // This ensures each model in a subcategory is uniquely selectable
+        const partId: PartIdentifier = {
+          mode: emojiType,
+          part: partType,
+          subcategory: `${subcategory}-${model.id}`  // Make identifier unique per model
+        };
         
-        return (
+        const modelButton = (
           <button
-            key={model.id}
             onClick={() => onSelectModel(model.id)}
             className={`flex-shrink-0 w-16 h-16 flex items-center justify-center p-1 rounded border-2 transition-colors duration-150 ${
               isSelected
@@ -64,6 +77,22 @@ export default function ModelGalleryBase({
               />
             </div>
           </button>
+        );
+        
+        // In multi-select mode, wrap buttons with SelectableItem
+        return (
+          <div key={model.id} className="relative">
+            {partType && isMultiSelectMode ? (
+              <SelectableItem
+                partId={partId}
+                onClick={() => onSelectModel(model.id)}
+              >
+                {modelButton}
+              </SelectableItem>
+            ) : (
+              modelButton
+            )}
+          </div>
         );
       })}
     </div>

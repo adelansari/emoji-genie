@@ -26,6 +26,8 @@ export default function StickerModelGallery() {
       selectedModelId={selectedModelId}
       onSelectModel={(modelId) => setSelectedStickerModel(selectedStickerPart, selectedStickerSubcategory, modelId)}
       emptyStateMessage={`No models available for this option.`}
+      partType={selectedStickerPart}
+      subcategory={selectedStickerSubcategory}
     />
   );
 }
