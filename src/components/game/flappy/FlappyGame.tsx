@@ -54,6 +54,7 @@ const FlappyGame = () => {
   const stageRef = useRef<Konva.Stage>(null);
   const animationRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
+  const isInitializedRef = useRef<boolean>(false);
   
   // Local state
   const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
@@ -70,6 +71,10 @@ const FlappyGame = () => {
   const [localHighScore, setLocalHighScore] = useState(highScore);
   const [localPlayCount, setLocalPlayCount] = useState(playCount);
   const [localTotalPipesPassed, setLocalTotalPipesPassed] = useState(totalPipesPassed);
+  const [shouldStartGame, setShouldStartGame] = useState(false);
+  const [shouldEndGame, setShouldEndGame] = useState(false);
+  const [shouldIncrementScore, setShouldIncrementScore] = useState(false);
+  const [shouldUpdateTheme, setShouldUpdateTheme] = useState<GameTheme | null>(null);
 
   // Dynamic calculations based on canvas size
   const birdSize = useMemo(() => BIRD_SIZE_BASE * (canvasSize.width / 600), [canvasSize.width]);
@@ -85,6 +90,9 @@ const FlappyGame = () => {
   
   // Initialize from localStorage on first load
   useEffect(() => {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+    
     // Load high score
     const savedHighScore = getHighScore();
     if (savedHighScore > highScore) {
@@ -124,7 +132,56 @@ const FlappyGame = () => {
       setLocalAchievements(savedAchievements);
     }
   }, []);
+
+  // Handle all context state updates safely
+  useEffect(() => {
+    if (shouldStartGame) {
+      contextStartGame();
+      setShouldStartGame(false);
+      
+      // Increment play count in localStorage
+      const newPlayCount = incrementPlayCount();
+      setLocalPlayCount(newPlayCount);
+      
+      // Update game count achievements
+      updateAchievements('games', newPlayCount);
+    }
+  }, [shouldStartGame, contextStartGame]);
   
+  useEffect(() => {
+    if (shouldEndGame) {
+      contextEndGame();
+      setShouldEndGame(false);
+      
+      // Save high score if current score is higher
+      if (score > localHighScore) {
+        saveHighScore(score);
+        setLocalHighScore(score);
+        
+        // Update score achievements
+        updateAchievements('score', score);
+      }
+    }
+  }, [shouldEndGame, contextEndGame, score, localHighScore]);
+  
+  useEffect(() => {
+    if (shouldIncrementScore) {
+      contextIncrementScore();
+      setShouldIncrementScore(false);
+      
+      // Update total pipes passed in localStorage
+      const newTotal = incrementTotalPipesPassed(1);
+      setLocalTotalPipesPassed(newTotal);
+    }
+  }, [shouldIncrementScore, contextIncrementScore]);
+  
+  useEffect(() => {
+    if (shouldUpdateTheme !== null) {
+      saveGameTheme(shouldUpdateTheme);
+      setShouldUpdateTheme(null);
+    }
+  }, [shouldUpdateTheme]);
+
   // Load character image
   useEffect(() => {
     if (characterImageUrl) {
@@ -140,18 +197,11 @@ const FlappyGame = () => {
     }
   }, [characterImageUrl]);
   
-  // Modified game functions to use localStorage
+  // Modified game functions to use localStorage via effects
   const startGame = useCallback(() => {
-    contextStartGame();
+    setShouldStartGame(true);
     setPipesPassedThisGame(0);
-    
-    // Increment play count in localStorage
-    const newPlayCount = incrementPlayCount();
-    setLocalPlayCount(newPlayCount);
-    
-    // Update game count achievements
-    updateAchievements('games', newPlayCount);
-  }, [contextStartGame]);
+  }, []);
   
   const resetGame = useCallback(() => {
     contextResetGame();
@@ -160,27 +210,14 @@ const FlappyGame = () => {
   }, [contextResetGame]);
   
   const incrementScore = useCallback(() => {
-    contextIncrementScore();
+    setShouldIncrementScore(true);
     setPipesPassedThisGame(prev => prev + 1);
-    
-    // Update total pipes passed in localStorage
-    const newTotal = incrementTotalPipesPassed(1);
-    setLocalTotalPipesPassed(newTotal);
-  }, [contextIncrementScore]);
+  }, []);
   
   const endGame = useCallback(() => {
-    contextEndGame();
+    setShouldEndGame(true);
     setShowDeathEffect(true);
-    
-    // Save high score if current score is higher
-    if (score > localHighScore) {
-      saveHighScore(score);
-      setLocalHighScore(score);
-    }
-    
-    // Update score achievements
-    updateAchievements('score', score);
-  }, [contextEndGame, score, localHighScore]);
+  }, []);
   
   // Update achievements and save to localStorage
   const updateAchievements = useCallback((type: 'score' | 'games', value: number) => {
@@ -214,7 +251,7 @@ const FlappyGame = () => {
   // Handle theme change
   const handleThemeChange = useCallback((newTheme: GameTheme) => {
     setGameTheme(newTheme);
-    saveGameTheme(newTheme);
+    setShouldUpdateTheme(newTheme);
   }, []);
 
   // Bird flap function
@@ -307,6 +344,11 @@ const FlappyGame = () => {
         return;
       }
       
+      // Create a local incrementScore function that doesn't directly call context updates
+      const handleScoreIncrement = () => {
+        incrementScore();
+      };
+      
       // Update pipes and check for score
       setPipes(currentPipes => updatePipes(
         currentPipes, 
@@ -315,7 +357,7 @@ const FlappyGame = () => {
         canvasSize.width, 
         canvasSize.height,
         pipeGap,
-        incrementScore
+        handleScoreIncrement
       ));
       
       // Continue animation loop
@@ -376,13 +418,8 @@ const FlappyGame = () => {
         style={{ width: canvasSize.width, height: canvasSize.height }}
       >
         <Layer>
-          {/* Game background */}
           <FlappyBackground width={canvasSize.width} height={canvasSize.height} theme={gameTheme} />
-          
-          {/* Pipes */}
           <FlappyPipes pipes={pipes} canvasHeight={canvasSize.height} theme={gameTheme} />
-          
-          {/* Character */}
           <FlappyCharacter
             x={birdPosition.x}
             y={birdPosition.y}
@@ -392,16 +429,12 @@ const FlappyGame = () => {
             characterImage={characterImage}
             characterColor={characterColor}
           />
-          
-          {/* Visual effects (when the bird dies) */}
           <FlappyEffects 
             active={showDeathEffect && gameOver}
             x={birdPosition.x}
             y={birdPosition.y}
             onComplete={handleEffectComplete}
           />
-          
-          {/* Theme switcher - only enabled when not playing */}
           <ThemeSwitch
             width={canvasSize.width}
             height={canvasSize.height}
@@ -409,8 +442,6 @@ const FlappyGame = () => {
             onThemeChange={handleThemeChange}
             disabled={isPlaying}
           />
-          
-          {/* UI Elements */}
           <FlappyUI 
             width={canvasSize.width}
             height={canvasSize.height}
@@ -421,8 +452,6 @@ const FlappyGame = () => {
             characterImage={characterImage}
             theme={gameTheme}
           />
-          
-          {/* Achievement notifications */}
           <FlappyAchievement 
             achievements={localAchievements}
             width={canvasSize.width}
