@@ -1,7 +1,14 @@
-import { FC, memo, useRef, useState, useEffect } from 'react';
+import { FC, memo, useRef, useState, useEffect, useMemo } from 'react';
 import { Layer, Rect, Group, Circle, Star } from 'react-konva';
 import { THEME_COLORS } from './config';
 import { GameTheme } from './storageUtils';
+
+interface StarData {
+  x: number;
+  y: number;
+  size: number;
+  opacity: number;
+}
 
 interface FlappyBackgroundProps {
   width: number;
@@ -20,6 +27,16 @@ const FlappyBackground: FC<FlappyBackgroundProps> = ({ width, height, theme, isP
   const [groundOffset, setGroundOffset] = useState(0);
   const animationRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
+  
+  // Generate static stars data using useMemo to prevent re-creation on every render
+  const starsData = useMemo(() => {
+    return Array.from({ length: 20 }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height * 0.6,
+      size: Math.random() * 2 + 1,
+      opacity: Math.random() * 0.5 + 0.3
+    }));
+  }, [width, height]);
   
   // Ground pattern settings
   const segmentWidth = width * 0.2; // Width of a single ground segment
@@ -80,24 +97,17 @@ const FlappyBackground: FC<FlappyBackgroundProps> = ({ width, height, theme, isP
       {theme === 'night' ? (
         // Night theme elements
         <>
-          {/* Stars */}
-          {[...Array(20)].map((_, i) => {
-            const x = Math.random() * width;
-            const y = Math.random() * height * 0.6;
-            const size = Math.random() * 2 + 1;
-            const opacity = Math.random() * 0.5 + 0.3;
-            
-            return (
-              <Circle
-                key={`star-${i}`}
-                x={x}
-                y={y}
-                radius={size}
-                fill="white"
-                opacity={opacity}
-              />
-            );
-          })}
+          {/* Stars - now using pre-generated static data */}
+          {starsData.map((star, i) => (
+            <Circle
+              key={`star-${i}`}
+              x={star.x}
+              y={star.y}
+              radius={star.size}
+              fill="white"
+              opacity={star.opacity}
+            />
+          ))}
           
           {/* Moon */}
           <Group x={width * 0.8} y={height * 0.15}>
