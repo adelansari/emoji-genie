@@ -50,13 +50,19 @@ const FlappyGame = () => {
     achievements
   } = useGame();
   
-  // Refs
+  // Refs for performance optimization
   const stageRef = useRef<Konva.Stage>(null);
   const animationRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
   
-  // Local state
+  // Game state refs to avoid re-renders
+  const birdPositionRef = useRef({ x: 0, y: 0 });
+  const birdVelocityRef = useRef(0);
+  const pipesRef = useRef<PipeData[]>([]);
+  const frameCountRef = useRef(0);
+  const physicsDeltaRef = useRef(0);
+  
+  // Local state (minimized to improve performance)
   const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
   const [birdPosition, setBirdPosition] = useState({ x: canvasSize.width * 0.2, y: canvasSize.height / 2 });
   const [birdVelocity, setBirdVelocity] = useState(0);
@@ -66,16 +72,10 @@ const FlappyGame = () => {
   const [showDeathEffect, setShowDeathEffect] = useState(false);
   const [localAchievements, setLocalAchievements] = useState<StoredAchievement[]>([]);
   const [pipesPassedThisGame, setPipesPassedThisGame] = useState(0);
-  
-  // Local state to track and update to context values
   const [localHighScore, setLocalHighScore] = useState(highScore);
   const [localPlayCount, setLocalPlayCount] = useState(playCount);
   const [localTotalPipesPassed, setLocalTotalPipesPassed] = useState(totalPipesPassed);
-  const [shouldStartGame, setShouldStartGame] = useState(false);
-  const [shouldEndGame, setShouldEndGame] = useState(false);
-  const [shouldIncrementScore, setShouldIncrementScore] = useState(false);
-  const [shouldUpdateTheme, setShouldUpdateTheme] = useState<GameTheme | null>(null);
-
+  
   // Dynamic calculations based on canvas size
   const birdSize = useMemo(() => BIRD_SIZE_BASE * (canvasSize.width / 600), [canvasSize.width]);
   const pipeGap = useMemo(() => canvasSize.height * 0.35, [canvasSize.height]);
@@ -87,6 +87,11 @@ const FlappyGame = () => {
   const characterColor = useMemo(() => {
     return emojiType === 'emoji' ? '#FACC15' : '#FF6B6B';
   }, [emojiType]);
+
+  // Initialize refs with current state
+  useEffect(() => {
+    birdPositionRef.current = { x: canvasSize.width * 0.2, y: canvasSize.height / 2 };
+  }, [canvasSize]);
   
   // Initialize from localStorage on first load
   useEffect(() => {
@@ -133,90 +138,72 @@ const FlappyGame = () => {
     }
   }, []);
 
-  // Handle all context state updates safely
-  useEffect(() => {
-    if (shouldStartGame) {
-      contextStartGame();
-      setShouldStartGame(false);
-      
-      // Increment play count in localStorage
-      const newPlayCount = incrementPlayCount();
-      setLocalPlayCount(newPlayCount);
-      
-      // Update game count achievements
-      updateAchievements('games', newPlayCount);
-    }
-  }, [shouldStartGame, contextStartGame]);
-  
-  useEffect(() => {
-    if (shouldEndGame) {
-      contextEndGame();
-      setShouldEndGame(false);
-      
-      // Save high score if current score is higher
-      if (score > localHighScore) {
-        saveHighScore(score);
-        setLocalHighScore(score);
-        
-        // Update score achievements
-        updateAchievements('score', score);
-      }
-    }
-  }, [shouldEndGame, contextEndGame, score, localHighScore]);
-  
-  useEffect(() => {
-    if (shouldIncrementScore) {
-      contextIncrementScore();
-      setShouldIncrementScore(false);
-      
-      // Update total pipes passed in localStorage
-      const newTotal = incrementTotalPipesPassed(1);
-      setLocalTotalPipesPassed(newTotal);
-    }
-  }, [shouldIncrementScore, contextIncrementScore]);
-  
-  useEffect(() => {
-    if (shouldUpdateTheme !== null) {
-      saveGameTheme(shouldUpdateTheme);
-      setShouldUpdateTheme(null);
-    }
-  }, [shouldUpdateTheme]);
-
-  // Load character image
-  useEffect(() => {
-    if (characterImageUrl) {
-      const img = new window.Image();
-      img.src = characterImageUrl;
-      img.onload = () => setCharacterImage(img);
-      img.onerror = () => {
-        console.error("Failed to load character image.");
-        setCharacterImage(null);
-      };
-    } else {
-      setCharacterImage(null);
-    }
-  }, [characterImageUrl]);
-  
-  // Modified game functions to use localStorage via effects
+  // Handle context state updates
   const startGame = useCallback(() => {
-    setShouldStartGame(true);
+    contextStartGame();
     setPipesPassedThisGame(0);
-  }, []);
+    
+    // Initialize bird position and velocity in refs
+    birdPositionRef.current = { x: canvasSize.width * 0.2, y: canvasSize.height / 2 };
+    birdVelocityRef.current = 0;
+    pipesRef.current = [];
+    
+    // Set initial react state too
+    setBirdPosition(birdPositionRef.current);
+    setBirdVelocity(0);
+    setPipes([]);
+    
+    // Increment play count in localStorage
+    const newPlayCount = incrementPlayCount();
+    setLocalPlayCount(newPlayCount);
+    
+    // Update game count achievements
+    updateAchievements('games', newPlayCount);
+  }, [contextStartGame, canvasSize.width, canvasSize.height]);
+  
+  const endGame = useCallback(() => {
+    contextEndGame();
+    setShowDeathEffect(true);
+    
+    // Save high score if current score is higher
+    if (score > localHighScore) {
+      saveHighScore(score);
+      setLocalHighScore(score);
+      
+      // Update score achievements
+      updateAchievements('score', score);
+    }
+  }, [contextEndGame, score, localHighScore]);
+  
+  const incrementScore = useCallback(() => {
+    contextIncrementScore();
+    setPipesPassedThisGame(prev => prev + 1);
+    
+    // Update total pipes passed in localStorage
+    const newTotal = incrementTotalPipesPassed(1);
+    setLocalTotalPipesPassed(newTotal);
+  }, [contextIncrementScore]);
   
   const resetGame = useCallback(() => {
     contextResetGame();
     setShowDeathEffect(false);
     setPipesPassedThisGame(0);
-  }, [contextResetGame]);
+    
+    // Reset positions
+    birdPositionRef.current = { x: canvasSize.width * 0.2, y: canvasSize.height / 2 };
+    birdVelocityRef.current = 0;
+    pipesRef.current = [];
+    
+    // Update React state to match
+    setBirdPosition(birdPositionRef.current);
+    setBirdVelocity(0);
+    setPipes([]);
+  }, [contextResetGame, canvasSize]);
   
-  const incrementScore = useCallback(() => {
-    setShouldIncrementScore(true);
-    setPipesPassedThisGame(prev => prev + 1);
-  }, []);
-  
-  const endGame = useCallback(() => {
-    setShouldEndGame(true);
-    setShowDeathEffect(true);
+  // Handle theme change
+  const handleThemeChange = useCallback((newTheme: GameTheme) => {
+    setGameTheme(newTheme);
+    saveGameTheme(newTheme);
   }, []);
   
   // Update achievements and save to localStorage
@@ -247,30 +234,48 @@ const FlappyGame = () => {
       return updatedAchievements;
     });
   }, []);
-  
-  // Handle theme change
-  const handleThemeChange = useCallback((newTheme: GameTheme) => {
-    setGameTheme(newTheme);
-    setShouldUpdateTheme(newTheme);
-  }, []);
 
-  // Bird flap function
+  // Load character image
+  useEffect(() => {
+    if (characterImageUrl) {
+      const img = new window.Image();
+      img.src = characterImageUrl;
+      img.onload = () => setCharacterImage(img);
+      img.onerror = () => {
+        console.error("Failed to load character image.");
+        setCharacterImage(null);
+      };
+    } else {
+      setCharacterImage(null);
+    }
+  }, [characterImageUrl]);
+
+  // Bird flap function - optimized for performance
   const flap = useCallback(() => {
     if (!isPlaying) return;
+    
+    // Update ref immediately for responsive gameplay
+    birdVelocityRef.current = flapStrength;
+    
+    // We still need to update React state for the rotation calculation
     setBirdVelocity(flapStrength);
   }, [isPlaying, flapStrength]);
 
   // Handle canvas interaction
-  const handleCanvasInteraction = useCallback(() => {
+  const handleCanvasInteraction = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Don't handle click if it's propagated from the ThemeSwitch
+    if (e.target.name() === 'themeSwitch') return;
+    
     if (!isPlaying && !gameOver) {
       startGame();
-      setTimeout(() => setBirdVelocity(flapStrength), 10);
+      // Add immediate flap on game start for better UX
+      setTimeout(() => flap(), 10);
     } else if (isPlaying) {
       flap();
     } else if (gameOver) {
       resetGame();
     }
-  }, [isPlaying, gameOver, startGame, resetGame, flap, flapStrength]);
+  }, [isPlaying, gameOver, startGame, resetGame, flap]);
 
   // Set up responsive canvas
   useEffect(() => {
@@ -285,8 +290,15 @@ const FlappyGame = () => {
   // Reset bird position when canvas size changes (when not playing)
   useEffect(() => {
     if (!isPlaying && !gameOver) {
-      setBirdPosition({ x: canvasSize.width * 0.2, y: canvasSize.height / 2 });
+      const newPosition = { 
+        x: canvasSize.width * 0.2, 
+        y: canvasSize.height / 2 
+      };
+      birdPositionRef.current = newPosition;
+      setBirdPosition(newPosition);
+      birdVelocityRef.current = 0;
       setBirdVelocity(0);
+      pipesRef.current = [];
       setPipes([]);
     }
   }, [canvasSize, isPlaying, gameOver]);
@@ -295,10 +307,11 @@ const FlappyGame = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
-        e.preventDefault();
+        e.preventDefault(); // Prevent scrolling
         if (!isPlaying && !gameOver) {
           startGame();
-          setTimeout(() => setBirdVelocity(flapStrength), 10);
+          // Add immediate flap on game start with space key
+          setTimeout(() => flap(), 10);
         } else if (isPlaying) {
           flap();
         } else if (gameOver) {
@@ -309,97 +322,135 @@ const FlappyGame = () => {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, gameOver, startGame, resetGame, flap, flapStrength]);
+  }, [isPlaying, gameOver, startGame, resetGame, flap]);
   
-  // Main game loop
+  // OPTIMIZED GAME LOOP - IMPROVED FOR SMOOTH PIPE MOVEMENT
   useEffect(() => {
     if (!isPlaying) return;
 
-    const gameLoop = (timestamp: number) => {
-      if (!lastTimeRef.current) {
-        lastTimeRef.current = timestamp;
+    let previousTime = 0;
+    const frameInterval = 1000 / 60; // Target 60 FPS
+    
+    const gameLoop = (currentTime: number) => {
+      if (!isPlaying) return;
+      
+      // Calculate time delta
+      const elapsed = previousTime ? currentTime - previousTime : frameInterval;
+      previousTime = currentTime;
+      
+      // Skip frame if browser tab is inactive (elapsed is too large)
+      if (elapsed > 100) {
+        animationRef.current = requestAnimationFrame(gameLoop);
+        return;
       }
       
-      // Physics updates
-      const newVelocity = Math.max(-10, Math.min(10, birdVelocity + gravity));
+      // Physics update based on elapsed time
+      const elapsedInSeconds = elapsed / 1000;
+      physicsDeltaRef.current += elapsed;
       
-      // Modified: Only prevent bird from going above the ceiling, not below the ground
-      const newPosition = {
-        x: birdPosition.x,
-        y: Math.max(birdSize/2, birdPosition.y + newVelocity)
+      // Fixed physics timestep for consistent behavior
+      const physicsStep = 16; // ~60 FPS physics
+      
+      // Accumulate time and run physics in fixed steps
+      while (physicsDeltaRef.current >= physicsStep) {
+        const scaledGravity = gravity * (physicsStep / 1000) * 60;
+        
+        // Update bird physics
+        birdVelocityRef.current += scaledGravity;
+        birdPositionRef.current.y += birdVelocityRef.current;
+        
+        // Check ceiling and ground collisions
+        if (birdPositionRef.current.y < birdSize / 2) {
+          birdPositionRef.current.y = birdSize / 2;
+          birdVelocityRef.current = 0;
+        } else if (birdPositionRef.current.y > canvasSize.height - birdSize / 2) {
+          birdPositionRef.current.y = canvasSize.height - birdSize / 2;
+          endGame();
+          return;
+        }
+        
+        physicsDeltaRef.current -= physicsStep;
+      }
+
+      // Handle score increment - wrapped in function to avoid state updates in game loop
+      const handleScoreIncrement = () => {
+        incrementScore();
       };
       
-      setBirdVelocity(newVelocity);
-      setBirdPosition(newPosition);
-      
-      // Check for collisions before updating pipes - this ensures ground detection works
+      // Check pipe collisions
       if (checkCollision(
-        birdPosition.x,
-        birdPosition.y,
+        birdPositionRef.current.x,
+        birdPositionRef.current.y,
         birdSize,
-        pipes,
+        pipesRef.current,
         canvasSize.height
       )) {
         endGame();
         return;
       }
       
-      // Create a local incrementScore function that doesn't directly call context updates
-      const handleScoreIncrement = () => {
-        incrementScore();
-      };
-      
-      // Update pipes and check for score
-      setPipes(currentPipes => updatePipes(
-        currentPipes, 
-        gameSpeed, 
-        birdPosition.x, 
+      // Move pipes - use elapsed time for smooth movement
+      // This is key for smooth pipe animation regardless of framerate
+      pipesRef.current = updatePipes(
+        pipesRef.current, 
+        gameSpeed * (elapsed / 16.667), // Scale speed by actual frame time for consistency
+        birdPositionRef.current.x, 
         canvasSize.width, 
         canvasSize.height,
         pipeGap,
         handleScoreIncrement
-      ));
+      );
       
-      // Continue animation loop
+      // Increment frame counter
+      frameCountRef.current++;
+      
+      // Update React state to render - IMPORTANT: Update pipes EVERY frame for smooth movement
+      // Only update bird position less frequently to save performance
+      if (frameCountRef.current % 2 === 0) {
+        setBirdPosition({...birdPositionRef.current});
+        setBirdVelocity(birdVelocityRef.current);
+      }
+      
+      // Always update pipes every frame for smooth movement
+      setPipes([...pipesRef.current]);
+      
+      // Continue the animation loop
       animationRef.current = requestAnimationFrame(gameLoop);
     };
     
-    // Start game loop
-    lastTimeRef.current = 0;
+    // Start the game loop and reset frame counter
+    frameCountRef.current = 0;
+    physicsDeltaRef.current = 0;
+    previousTime = 0;
     animationRef.current = requestAnimationFrame(gameLoop);
     
-    // Cleanup on unmount or game end
+    // Cleanup animation on unmount or game end
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
     };
   }, [
-    birdPosition,
-    birdVelocity,
-    pipes,
     isPlaying,
-    gameSpeed,
-    gravity,
-    incrementScore,
     canvasSize,
     birdSize,
+    gravity,
+    gameSpeed,
+    pipeGap,
     endGame,
-    pipeGap
+    incrementScore
   ]);
   
-  // Reset game state when game is reset
-  useEffect(() => {
-    if (!isPlaying && !gameOver) {
-      setBirdPosition({ x: canvasSize.width * 0.2, y: canvasSize.height / 2 });
-      setBirdVelocity(0);
-      setPipes([]);
-      setPipesPassedThisGame(0);
+  // Calculate bird rotation for visual effect
+  const birdRotation = useMemo(() => {
+    // Smoother rotation calculations for more responsive feel
+    if (birdVelocity < 0) {
+      return Math.max(-25, birdVelocity * 1.5);
+    } else {
+      return Math.min(90, birdVelocity * 3);
     }
-  }, [isPlaying, gameOver, canvasSize]);
-  
-  // Calculate bird rotation based on velocity (for visual effect)
-  const birdRotation = Math.max(-30, Math.min(30, birdVelocity * 3));
+  }, [birdVelocity]);
   
   // Handle cleanup for death effect
   const handleEffectComplete = useCallback(() => {
