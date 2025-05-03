@@ -3,7 +3,6 @@ import { useGame } from '../../context/GameContext';
 import GameSelector from './GameSelector';
 import { ArrowLeft } from 'lucide-react';
 import { FlappyGame, FlappyGameControls } from './flappy';
-import { RunnerGame, RunnerGameControls } from './runner';
 
 const GamePage = () => {
   const { gameType } = useGame();
@@ -15,7 +14,10 @@ const GamePage = () => {
       case 'flappy':
         return <FlappyGame />;
       case 'runner':
-        return <RunnerGame />;
+        return <div className="bg-gray-800/50 p-8 text-center rounded-lg">
+          <h2 className="text-2xl text-yellow-400 font-bold mb-4">Emoji Runner</h2>
+          <p className="text-gray-300">This game is coming soon! Please check back later.</p>
+        </div>;
       case 'puzzle':
         return <div className="bg-gray-800/50 p-8 text-center rounded-lg">
           <h2 className="text-2xl text-yellow-400 font-bold mb-4">Emoji Puzzle</h2>
@@ -31,8 +33,6 @@ const GamePage = () => {
     switch (gameType) {
       case 'flappy':
         return <FlappyGameControls />;
-      case 'runner':
-        return <RunnerGameControls />;
       default:
         return null;
     }
