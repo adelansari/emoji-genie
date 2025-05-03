@@ -136,19 +136,28 @@ const FlappyGame = () => {
       
       // Physics updates
       const newVelocity = Math.max(-10, Math.min(10, birdVelocity + gravity));
+      
+      // Modified: Only prevent bird from going above the ceiling, not below the ground
+      // This allows proper ground collision detection
       const newPosition = {
         x: birdPosition.x,
-        y: Math.max(
-          birdSize/2, 
-          Math.min(
-            canvasSize.height - canvasSize.height * 0.1 - birdSize/2, 
-            birdPosition.y + newVelocity
-          )
-        )
+        y: Math.max(birdSize/2, birdPosition.y + newVelocity)
       };
       
       setBirdVelocity(newVelocity);
       setBirdPosition(newPosition);
+      
+      // Check for collisions before updating pipes - this ensures ground detection works
+      if (checkCollision(
+        birdPosition.x,
+        birdPosition.y,
+        birdSize,
+        pipes,
+        canvasSize.height
+      )) {
+        endGame();
+        return;
+      }
       
       // Update pipes and check for score
       setPipes(currentPipes => updatePipes(
@@ -160,18 +169,6 @@ const FlappyGame = () => {
         pipeGap,
         incrementScore
       ));
-      
-      // Check for collisions
-      if (checkCollision(
-        birdPosition.x,
-        birdPosition.y,
-        birdSize,
-        pipes,
-        canvasSize.height
-      )) {
-        endGame();
-        return;
-      }
       
       // Continue animation loop
       animationRef.current = requestAnimationFrame(gameLoop);
