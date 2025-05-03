@@ -1,7 +1,7 @@
 // Game physics constants
 export const BASE_GRAVITY = 0.25;
-export const DESKTOP_FLAP_STRENGTH = -7;
-export const MOBILE_FLAP_STRENGTH = -5.5;
+export const DESKTOP_FLAP_STRENGTH = -6.5;
+export const MOBILE_FLAP_STRENGTH = -4.5;
 export const PIPE_WIDTH = 60;
 export const BIRD_SIZE_BASE = 40;
 
