@@ -2,6 +2,7 @@ import { FC, memo } from 'react';
 import { Group, Rect, Text, Circle } from 'react-konva';
 import { GameTheme } from './storageUtils';
 import { THEME_CYCLE } from './config';
+import Konva from 'konva';
 
 interface ThemeSwitchProps {
   width: number;
@@ -23,7 +24,10 @@ const ThemeSwitch: FC<ThemeSwitchProps> = ({
   const y = 10;
   
   // Get next theme in cycle
-  const handleClick = () => {
+  const handleClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Stop event propagation to prevent canvas click handler from firing
+    e.cancelBubble = true;
+    
     if (disabled) return;
     
     const currentIndex = THEME_CYCLE.indexOf(currentTheme);
