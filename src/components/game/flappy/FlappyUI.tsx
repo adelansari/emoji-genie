@@ -1,5 +1,5 @@
 import { FC, memo } from 'react';
-import { Text, Rect, Group } from 'react-konva';
+import { Text, Rect } from 'react-konva';
 import { THEME_COLORS } from './config';
 import { GameTheme } from './storageUtils';
 

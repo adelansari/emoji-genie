@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import { useGame } from '../../../context/GameContext';
-import { useEmojiCustomization } from '../../../context/EmojiCustomizationContext';
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
 
@@ -23,9 +22,7 @@ import {
   saveHighScore,
   getGameTheme,
   saveGameTheme,
-  getPlayCount,
   incrementPlayCount,
-  getTotalPipesPassed,
   incrementTotalPipesPassed,
   getAchievements,
   saveAchievements
@@ -44,10 +41,7 @@ const FlappyGame = () => {
     endGame: contextEndGame, 
     gameSpeed, 
     characterImageUrl, 
-    emojiType,
-    playCount,
-    totalPipesPassed,
-    achievements
+    emojiType
   } = useGame();
   
   // Refs for performance optimization
@@ -73,8 +67,6 @@ const FlappyGame = () => {
   const [localAchievements, setLocalAchievements] = useState<StoredAchievement[]>([]);
   const [pipesPassedThisGame, setPipesPassedThisGame] = useState(0);
   const [localHighScore, setLocalHighScore] = useState(highScore);
-  const [localPlayCount, setLocalPlayCount] = useState(playCount);
-  const [localTotalPipesPassed, setLocalTotalPipesPassed] = useState(totalPipesPassed);
   
   // Dynamic calculations based on canvas size
   const birdSize = useMemo(() => BIRD_SIZE_BASE * (canvasSize.width / 600), [canvasSize.width]);
@@ -106,12 +98,6 @@ const FlappyGame = () => {
     
     // Load theme
     setGameTheme(getGameTheme());
-    
-    // Load play count
-    setLocalPlayCount(getPlayCount());
-    
-    // Load total pipes passed
-    setLocalTotalPipesPassed(getTotalPipesPassed());
     
     // Load or initialize achievements
     const savedAchievements = getAchievements();
@@ -153,12 +139,9 @@ const FlappyGame = () => {
     setBirdVelocity(0);
     setPipes([]);
     
-    // Increment play count in localStorage
-    const newPlayCount = incrementPlayCount();
-    setLocalPlayCount(newPlayCount);
-    
-    // Update game count achievements
-    updateAchievements('games', newPlayCount);
+    // Increment play count in localStorage and update achievements
+    incrementPlayCount();
+    updateAchievements('games', getAchievements(/*games count*/));
   }, [contextStartGame, canvasSize.width, canvasSize.height]);
   
   const endGame = useCallback(() => {
@@ -180,8 +163,7 @@ const FlappyGame = () => {
     setPipesPassedThisGame(prev => prev + 1);
     
     // Update total pipes passed in localStorage
-    const newTotal = incrementTotalPipesPassed(1);
-    setLocalTotalPipesPassed(newTotal);
+    incrementTotalPipesPassed(1);
   }, [contextIncrementScore]);
   
   const resetGame = useCallback(() => {
