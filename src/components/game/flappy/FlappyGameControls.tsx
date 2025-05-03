@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../../../context/GameContext';
 import { useEmojiCustomization } from '../../../context/EmojiCustomizationContext';
-import { Play, RotateCcw, HelpCircle } from 'lucide-react';
+import { Play, RotateCcw, HelpCircle, Medal } from 'lucide-react';
 
 const FlappyGameControls = () => {
   const { 
@@ -12,12 +12,16 @@ const FlappyGameControls = () => {
     gameSpeed,
     startGame,
     resetGame,
-    setGameSpeed
+    setGameSpeed,
+    achievements,
+    playCount,
+    totalPipesPassed
   } = useGame();
   
   const { emojiType } = useEmojiCustomization();
   
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
   
   // Improved speed options to match classic Flappy Bird feel
   const speedOptions = [
@@ -34,6 +38,13 @@ const FlappyGameControls = () => {
     } else if (!isPlaying) {
       startGame();
     }
+  };
+
+  // Get completion percentage for all achievements
+  const achievementCompletion = () => {
+    const total = achievements.length;
+    const completed = achievements.filter(a => a.unlocked).length;
+    return Math.round((completed / total) * 100);
   };
   
   return (
@@ -97,6 +108,78 @@ const FlappyGameControls = () => {
         )}
       </div>
       
+      {/* Achievements button */}
+      <button
+        onClick={() => setShowAchievements(!showAchievements)}
+        className="py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+      >
+        <Medal size={18} />
+        Achievements ({achievementCompletion()}% Complete)
+      </button>
+      
+      {/* Achievements panel */}
+      {showAchievements && (
+        <div className="bg-gray-900/70 rounded-md p-3 text-sm">
+          <div className="mb-3 pb-2 border-b border-gray-700">
+            <p className="text-gray-400">Game Stats:</p>
+            <div className="flex justify-between mt-1">
+              <span>Games Played:</span>
+              <span className="font-bold text-yellow-300">{playCount}</span>
+            </div>
+            <div className="flex justify-between mt-1">
+              <span>Total Pipes Cleared:</span>
+              <span className="font-bold text-yellow-300">{totalPipesPassed}</span>
+            </div>
+          </div>
+          
+          <p className="font-bold text-yellow-300 mb-2">Your Achievements:</p>
+          <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+            {achievements.map(achievement => (
+              <div 
+                key={achievement.id}
+                className={`p-2 rounded-md ${
+                  achievement.unlocked 
+                    ? "bg-indigo-900/50 border border-indigo-500/30" 
+                    : "bg-gray-800/50 border border-gray-700/30"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {achievement.unlocked ? (
+                    <div className="p-1 bg-yellow-500 rounded-full">
+                      <Medal size={14} className="text-gray-900" />
+                    </div>
+                  ) : (
+                    <div className="p-1 bg-gray-700 rounded-full">
+                      <Medal size={14} className="text-gray-500" />
+                    </div>
+                  )}
+                  <span className={achievement.unlocked ? "text-yellow-200 font-medium" : "text-gray-400"}>
+                    {achievement.title}
+                  </span>
+                </div>
+                
+                <p className="text-xs text-gray-400 mt-1 ml-7">
+                  {achievement.description}
+                </p>
+                
+                <div className="mt-2 ml-7">
+                  <div className="h-1.5 bg-gray-700 rounded-full w-full">
+                    <div 
+                      className="h-1.5 bg-indigo-500 rounded-full" 
+                      style={{ width: `${Math.min(100, Math.round((achievement.progress / achievement.milestone) * 100))}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-gray-500">
+                    <span>{achievement.progress}/{achievement.milestone}</span>
+                    <span>{Math.round((achievement.progress / achievement.milestone) * 100)}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
       {/* Main action buttons */}
       <div className="grid grid-cols-2 gap-3">
         {/* Play/Restart button */}
@@ -149,10 +232,11 @@ const FlappyGameControls = () => {
             <li>The game ends if you hit a pipe or the ground</li>
             <li>You can change the difficulty level before starting</li>
             <li>Create a new emoji/sticker in the customization tab first</li>
+            <li>Cycle through Day, Sunset, and Night themes in-game!</li>
           </ul>
           <div className="mt-3 p-2 bg-yellow-500/20 rounded border border-yellow-500/30">
             <p className="text-yellow-300 font-medium">Pro Tip:</p>
-            <p className="text-gray-300">Try different emoji/sticker designs to see which one performs best!</p>
+            <p className="text-gray-300">Complete achievements to track your progress and show off your skills!</p>
           </div>
         </div>
       )}

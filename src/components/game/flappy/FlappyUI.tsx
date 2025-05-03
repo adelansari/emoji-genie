@@ -1,5 +1,7 @@
 import { FC, memo } from 'react';
 import { Text, Rect, Group } from 'react-konva';
+import { THEME_COLORS } from './config';
+import { GameTheme } from './storageUtils';
 
 interface FlappyUIProps {
   width: number;
@@ -9,6 +11,7 @@ interface FlappyUIProps {
   isPlaying: boolean;
   gameOver: boolean;
   characterImage: HTMLImageElement | null;
+  theme: GameTheme;
 }
 
 const FlappyUI: FC<FlappyUIProps> = ({ 
@@ -18,8 +21,12 @@ const FlappyUI: FC<FlappyUIProps> = ({
   highScore, 
   isPlaying, 
   gameOver,
-  characterImage 
+  characterImage,
+  theme
 }) => {
+  // Theme colors
+  const textColors = THEME_COLORS[theme].text;
+  
   // Calculate responsive text sizes
   const fontSizeLarge = Math.max(16, width * 0.04);
   const fontSizeMedium = Math.max(14, width * 0.035);
@@ -37,7 +44,7 @@ const FlappyUI: FC<FlappyUIProps> = ({
         text={`Score: ${score}`}
         fontSize={fontSizeMedium}
         fontFamily="Arial"
-        fill="white"
+        fill={textColors.primary}
         x={width * 0.03}
         y={scoreTextY}
       />
@@ -47,32 +54,10 @@ const FlappyUI: FC<FlappyUIProps> = ({
         text={`Best: ${highScore}`}
         fontSize={fontSizeMedium}
         fontFamily="Arial"
-        fill="white"
+        fill={textColors.primary}
         x={width * 0.03}
         y={highScoreTextY}
       />
-      
-      {/* Custom character badge if exported */}
-      {characterImage && (
-        <Group x={width - (width * 0.22)} y={height * 0.03}>
-          <Rect
-            width={width * 0.2}
-            height={height * 0.05}
-            fill="rgba(0,0,0,0.5)"
-            cornerRadius={width * 0.03}
-          />
-          <Text
-            text="Custom"
-            fontSize={fontSizeXSmall}
-            fontFamily="Arial"
-            fill="#FFDD00"
-            x={width * 0.015}
-            y={height * 0.015}
-            width={width * 0.17}
-            align="center"
-          />
-        </Group>
-      )}
       
       {/* Starting instruction */}
       {!isPlaying && !gameOver && (
@@ -80,7 +65,7 @@ const FlappyUI: FC<FlappyUIProps> = ({
           text="Tap or Space to Start"
           fontSize={fontSizeLarge}
           fontFamily="Arial"
-          fill="white"
+          fill={textColors.primary}
           align="center"
           width={width * 0.8}
           x={width / 2}
@@ -106,7 +91,7 @@ const FlappyUI: FC<FlappyUIProps> = ({
             text="Game Over"
             fontSize={fontSizeLarge}
             fontFamily="Arial"
-            fill="#FF5252"
+            fill={textColors.gameOver}
             align="center"
             width={width * 0.6}
             x={width / 2}
@@ -117,7 +102,7 @@ const FlappyUI: FC<FlappyUIProps> = ({
             text={`Score: ${score}`}
             fontSize={fontSizeMedium}
             fontFamily="Arial"
-            fill="white"
+            fill={textColors.primary}
             align="center"
             width={width * 0.6}
             x={width / 2}
@@ -128,7 +113,7 @@ const FlappyUI: FC<FlappyUIProps> = ({
             text={score > highScore ? "New High Score!" : `Best: ${highScore}`}
             fontSize={fontSizeSmall}
             fontFamily="Arial"
-            fill={score > highScore ? "#FFD700" : "white"}
+            fill={score > highScore ? textColors.accent : textColors.primary}
             align="center"
             width={width * 0.6}
             x={width / 2}
