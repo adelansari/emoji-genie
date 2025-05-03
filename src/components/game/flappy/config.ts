@@ -9,7 +9,7 @@ export const BIRD_SIZE_BASE = 40;
 export const SPEED_OPTIONS = [
   { value: 2, label: 'Easy' },
   { value: 3.5, label: 'Normal' },
-  { value: 5, label: 'Hard' }
+  { value: 6, label: 'Hard' }
 ];
 
 // Game theme options and colors
