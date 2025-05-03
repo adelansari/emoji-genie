@@ -1,4 +1,4 @@
-import { FC, memo } from 'react';
+import { FC, memo, useRef, useState, useEffect } from 'react';
 import { Layer, Rect, Group, Circle, Star } from 'react-konva';
 import { THEME_COLORS } from './config';
 import { GameTheme } from './storageUtils';
@@ -7,12 +7,70 @@ interface FlappyBackgroundProps {
   width: number;
   height: number;
   theme: GameTheme;
+  isPlaying: boolean;
+  gameSpeed: number;
 }
 
-const FlappyBackground: FC<FlappyBackgroundProps> = ({ width, height, theme }) => {
+const FlappyBackground: FC<FlappyBackgroundProps> = ({ width, height, theme, isPlaying, gameSpeed }) => {
   // Calculate ground height - 10% of canvas height
   const groundHeight = height * 0.1;
   const colors = THEME_COLORS[theme];
+  
+  // Ground scrolling state
+  const [groundOffset, setGroundOffset] = useState(0);
+  const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
+  
+  // Ground pattern settings
+  const segmentWidth = width * 0.2; // Width of a single ground segment
+  const numSegments = Math.ceil(width / segmentWidth) + 1; // Number of segments needed to fill screen plus one extra
+  
+  // Ground animation effect
+  useEffect(() => {
+    if (!isPlaying) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      return;
+    }
+    
+    const animateGround = (timestamp: number) => {
+      if (!lastTimeRef.current) {
+        lastTimeRef.current = timestamp;
+      }
+      
+      const elapsed = timestamp - lastTimeRef.current;
+      lastTimeRef.current = timestamp;
+      
+      // Move ground based on game speed and elapsed time
+      // This keeps ground movement in sync with pipe movement
+      setGroundOffset((prevOffset) => {
+        // Calculate new offset based on game speed
+        let newOffset = prevOffset + (gameSpeed * (elapsed / 16.667));
+        
+        // Reset when a full segment has scrolled out of view
+        if (newOffset >= segmentWidth) {
+          newOffset = newOffset % segmentWidth;
+        }
+        
+        return newOffset;
+      });
+      
+      // Continue animation loop
+      animationRef.current = requestAnimationFrame(animateGround);
+    };
+    
+    lastTimeRef.current = 0;
+    animationRef.current = requestAnimationFrame(animateGround);
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, [isPlaying, gameSpeed, segmentWidth]);
   
   return (
     <>
@@ -116,26 +174,40 @@ const FlappyBackground: FC<FlappyBackgroundProps> = ({ width, height, theme }) =
         ))
       )}
       
-      {/* Ground */}
-      <Rect
-        y={height - groundHeight}
-        width={width}
-        height={groundHeight}
-        fill={colors.ground}
-      />
-      
-      {/* Ground details */}
-      {[...Array(8)].map((_, i) => (
-        <Rect
-          key={`ground-detail-${i}`}
-          x={width * (i * 0.12)}
-          y={height - groundHeight + (groundHeight * 0.3)}
-          width={width * 0.08}
-          height={groundHeight * 0.2}
-          fill={theme === 'night' ? "#2D221E" : theme === 'sunset' ? "#553D30" : "#7D3E13"}
-          cornerRadius={2}
-        />
-      ))}
+      {/* Scrolling Ground - Using multiple segments that move */}
+      <Group y={height - groundHeight}>
+        {/* Main ground pieces that repeat */}
+        {[...Array(numSegments)].map((_, i) => (
+          <Group key={`ground-segment-${i}`} x={i * segmentWidth - groundOffset}>
+            {/* Ground base */}
+            <Rect
+              width={segmentWidth}
+              height={groundHeight}
+              fill={colors.ground}
+            />
+            
+            {/* Ground details - bumps and texture */}
+            {[...Array(3)].map((_, j) => (
+              <Rect
+                key={`ground-detail-${i}-${j}`}
+                x={segmentWidth * (j * 0.25 + 0.1)}
+                y={groundHeight * 0.3}
+                width={segmentWidth * 0.15}
+                height={groundHeight * 0.2}
+                fill={theme === 'night' ? "#2D221E" : theme === 'sunset' ? "#553D30" : "#7D3E13"}
+                cornerRadius={2}
+              />
+            ))}
+            
+            {/* Top edge detail - grass or terrain line */}
+            <Rect
+              width={segmentWidth}
+              height={groundHeight * 0.1}
+              fill={theme === 'night' ? "#3E2E2A" : theme === 'sunset' ? "#674D3F" : "#A05226"}
+            />
+          </Group>
+        ))}
+      </Group>
     </>
   );
 };

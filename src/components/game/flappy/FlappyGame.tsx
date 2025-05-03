@@ -469,7 +469,13 @@ const FlappyGame = () => {
         style={{ width: canvasSize.width, height: canvasSize.height }}
       >
         <Layer>
-          <FlappyBackground width={canvasSize.width} height={canvasSize.height} theme={gameTheme} />
+          <FlappyBackground 
+            width={canvasSize.width} 
+            height={canvasSize.height} 
+            theme={gameTheme}
+            isPlaying={isPlaying}
+            gameSpeed={gameSpeed} 
+          />
           <FlappyPipes pipes={pipes} canvasHeight={canvasSize.height} theme={gameTheme} />
           <FlappyCharacter
             x={birdPosition.x}
