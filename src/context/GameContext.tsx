@@ -2,6 +2,9 @@ import { createContext, useState, useContext, useEffect, ReactNode } from 'react
 import { useEmojiCustomization, EmojiType } from './EmojiCustomizationContext'; // Import EmojiType
 import { loadImageFromLocalStorage } from '../utils/exportUtils';
 
+// Add game type
+export type GameType = 'flappy' | 'runner' | 'puzzle';
+
 interface GameContextType {
   isPlaying: boolean;
   score: number;
@@ -9,13 +12,15 @@ interface GameContextType {
   gameSpeed: number;
   gameOver: boolean;
   characterImageUrl: string | null;
-  emojiType: EmojiType; // Add emojiType here
+  emojiType: EmojiType;
+  gameType: GameType;
   startGame: () => void;
   endGame: () => void;
   incrementScore: () => void;
   resetGame: () => void;
   setGameSpeed: (speed: number) => void;
   setCharacterImageUrl: (url: string) => void;
+  setGameType: (type: GameType) => void;
 }
 
 const GameContext = createContext<GameContextType>(null!);
@@ -31,6 +36,7 @@ export const useGame = () => {
 // Storage keys
 const HIGH_SCORE_KEY = 'flappyEmojiHighScore';
 const CHARACTER_IMAGE_KEY = 'flappyEmojiCharacter';
+const GAME_TYPE_KEY = 'selectedGameType';
 
 interface GameProviderProps {
   children: ReactNode;
@@ -44,10 +50,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [gameSpeed, setGameSpeed] = useState(3.5);
   const [gameOver, setGameOver] = useState(false);
   const [characterImageUrl, setCharacterImageUrl] = useState<string | null>(null);
+  // Initialize with flappy game as default
+  const [gameType, setGameType] = useState<GameType>('flappy');
   
   const { emojiType } = useEmojiCustomization();
 
-  // Load high score and character image from local storage on component mount
+  // Load high score, character image, and game type from local storage on component mount
   useEffect(() => {
     // Load high score
     const storedHighScore = localStorage.getItem(HIGH_SCORE_KEY);
@@ -60,12 +68,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     if (storedCharacterImage) {
       setCharacterImageUrl(storedCharacterImage);
     }
+    
+    // Load game type
+    const storedGameType = localStorage.getItem(GAME_TYPE_KEY) as GameType;
+    if (storedGameType) {
+      setGameType(storedGameType);
+    }
   }, []);
 
   // Save high score to local storage whenever it changes
   useEffect(() => {
     localStorage.setItem(HIGH_SCORE_KEY, highScore.toString());
   }, [highScore]);
+  
+  // Save game type to local storage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(GAME_TYPE_KEY, gameType);
+    // Reset game state when changing game type
+    if (isPlaying) {
+      resetGame();
+    }
+  }, [gameType]);
 
   // Reset game when switching emoji type
   useEffect(() => {
@@ -107,13 +130,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     gameSpeed,
     gameOver,
     characterImageUrl,
-    emojiType, // Expose emojiType
+    emojiType,
+    gameType,
     startGame,
     endGame,
     incrementScore,
     resetGame,
     setGameSpeed,
-    setCharacterImageUrl
+    setCharacterImageUrl,
+    setGameType
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
