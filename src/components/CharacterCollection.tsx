@@ -3,6 +3,7 @@ import { useCharacterCollection, Character } from '../context/CharacterCollectio
 import { useEmojiCustomization } from '../context/EmojiCustomizationContext';
 import { useGame } from '../context/GameContext';
 import { Download, Trash2, Plus, Upload, Edit, Check, Star } from 'lucide-react';
+import { downloadImage } from '../utils/exportUtils';
 
 type FilterTab = 'all' | 'emoji' | 'sticker' | 'imported';
 
@@ -86,6 +87,15 @@ export const CharacterCollection = () => {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  // Handle downloading a character image
+  const handleDownloadCharacter = (character: Character) => {
+    const date = new Date().toLocaleDateString().replace(/\//g, '-');
+    const characterType = getCharacterTypeLabel(character).toLowerCase();
+    const filename = `${characterType}-${character.name}-${date}.png`;
+    
+    downloadImage(character.imageUrl, filename);
   };
 
   // Format date for display
@@ -249,6 +259,13 @@ export const CharacterCollection = () => {
                         </p>
                       </div>
                       <div className="flex gap-1">
+                        <button 
+                          onClick={() => handleDownloadCharacter(character)} 
+                          className="p-1 text-green-400 hover:text-green-300"
+                          title="Download character"
+                        >
+                          <Download size={14} />
+                        </button>
                         <button 
                           onClick={() => handleStartEdit(character)} 
                           className="p-1 text-blue-400 hover:text-blue-300"
