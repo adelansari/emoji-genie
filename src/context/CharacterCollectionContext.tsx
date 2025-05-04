@@ -1,5 +1,6 @@
-import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect, ReactNode, useMemo } from 'react';
 import { EmojiType } from './EmojiCustomizationContext';
+import { createDefaultCharacters } from '../data/defaults/defaultCharacters';
 
 // Character model
 export interface Character {
@@ -9,6 +10,7 @@ export interface Character {
   type: EmojiType;
   createdAt: number;
   isImported?: boolean; // Flag for imported images
+  isDefault?: boolean; // Flag for default base characters
 }
 
 interface CharacterCollectionContextType {
@@ -41,9 +43,24 @@ interface CharacterCollectionProviderProps {
 }
 
 export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderProps> = ({ children }) => {
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const [userCharacters, setUserCharacters] = useState<Character[]>([]);
   const [activeCharacterId, setActiveCharacterId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Get default characters that will always be present
+  const defaultCharacters = useMemo(() => createDefaultCharacters(), []);
+
+  // Combine user's characters with default characters
+  const characters = useMemo(() => {
+    // Filter out any user characters that have the same name as default characters
+    // (prevents duplicate defaults if old data has them)
+    const filteredUserChars = userCharacters.filter(
+      char => !char.isDefault && !defaultCharacters.some(def => def.name === char.name)
+    );
+    
+    // Combine default characters with user characters
+    return [...defaultCharacters, ...filteredUserChars];
+  }, [userCharacters, defaultCharacters]);
 
   // Load saved characters from localStorage on mount
   useEffect(() => {
@@ -54,8 +71,10 @@ export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderPr
         const parsedData = JSON.parse(savedCharacters);
         // Validate parsed data is an array
         if (Array.isArray(parsedData)) {
-          setCharacters(parsedData);
-          console.log('Loaded characters from localStorage:', parsedData.length);
+          // Filter out any old default characters from stored data
+          const nonDefaultCharacters = parsedData.filter(char => !char.isDefault);
+          setUserCharacters(nonDefaultCharacters);
+          console.log('Loaded user characters from localStorage:', nonDefaultCharacters.length);
         } else {
           console.error('Saved characters is not an array:', parsedData);
         }
@@ -80,9 +99,11 @@ export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderPr
     if (!isInitialized) return;
     
     try {
-      const serializedData = JSON.stringify(characters);
+      // Only save user characters to localStorage, not default ones
+      const userOnlyCharacters = characters.filter(char => !char.isDefault);
+      const serializedData = JSON.stringify(userOnlyCharacters);
       localStorage.setItem(LOCAL_STORAGE_KEY, serializedData);
-      console.log('Saved characters to localStorage:', characters.length);
+      console.log('Saved user characters to localStorage:', userOnlyCharacters.length);
     } catch (error) {
       console.error('Error saving characters to localStorage:', error);
       
@@ -90,7 +111,8 @@ export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderPr
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
         try {
           // Create a copy with placeholder images
-          const minimalCharacters = characters.map(char => ({
+          const userOnlyCharacters = characters.filter(char => !char.isDefault);
+          const minimalCharacters = userOnlyCharacters.map(char => ({
             ...char,
             imageUrl: char.imageUrl.length > 1000 ? `${char.imageUrl.substring(0, 64)}...` : char.imageUrl
           }));
@@ -131,7 +153,7 @@ export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderPr
       createdAt: Date.now()
     };
 
-    setCharacters(prev => [...prev, newCharacter]);
+    setUserCharacters(prev => [...prev, newCharacter]);
     return newCharacter.id;
   };
 
@@ -147,7 +169,13 @@ export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderPr
 
   // Update an existing character
   const updateCharacter = (id: string, updates: Partial<Omit<Character, 'id' | 'createdAt'>>) => {
-    setCharacters(prev => 
+    // Don't allow updating default characters
+    if (defaultCharacters.some(char => char.id === id)) {
+      console.warn('Cannot update default characters');
+      return;
+    }
+
+    setUserCharacters(prev => 
       prev.map(char => 
         char.id === id ? { ...char, ...updates } : char
       )
@@ -156,7 +184,13 @@ export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderPr
 
   // Delete a character from the collection
   const deleteCharacter = (id: string) => {
-    setCharacters(prev => prev.filter(char => char.id !== id));
+    // Don't allow deleting default characters
+    if (defaultCharacters.some(char => char.id === id)) {
+      console.warn('Cannot delete default characters');
+      return;
+    }
+
+    setUserCharacters(prev => prev.filter(char => char.id !== id));
     
     // If the active character was deleted, clear the active ID
     if (activeCharacterId === id) {

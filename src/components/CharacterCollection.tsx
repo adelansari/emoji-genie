@@ -2,7 +2,7 @@ import { useState, useRef, ChangeEvent } from 'react';
 import { useCharacterCollection, Character } from '../context/CharacterCollectionContext';
 import { useEmojiCustomization } from '../context/EmojiCustomizationContext';
 import { useGame } from '../context/GameContext';
-import { Download, Trash2, Plus, Upload, Edit, Check, Star } from 'lucide-react';
+import { Download, Trash2, Plus, Upload, Edit, Check, Star, Shield } from 'lucide-react';
 import { downloadImage } from '../utils/exportUtils';
 
 type FilterTab = 'all' | 'emoji' | 'sticker' | 'imported';
@@ -35,8 +35,14 @@ export const CharacterCollection = () => {
     }
   })();
 
-  // Sort characters by creation date (newest first)
-  const sortedCharacters = [...filteredCharacters].sort((a, b) => b.createdAt - a.createdAt);
+  // Sort characters by creation date (newest first), but always show default characters first
+  const sortedCharacters = [...filteredCharacters].sort((a, b) => {
+    // Default characters come first
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+    // Among non-default characters, show newest first
+    return b.createdAt - a.createdAt;
+  });
 
   // Handle selecting a character for the game
   const handleSelectCharacter = (character: Character) => {
@@ -46,6 +52,9 @@ export const CharacterCollection = () => {
 
   // Start editing a character name
   const handleStartEdit = (character: Character) => {
+    // Don't allow editing default characters
+    if (character.isDefault) return;
+    
     setEditingCharacterId(character.id);
     setEditName(character.name);
   };
@@ -109,6 +118,14 @@ export const CharacterCollection = () => {
       return 'Imported';
     }
     return character.type.charAt(0).toUpperCase() + character.type.slice(1);
+  };
+
+  // Handle character deletion (with check for default characters)
+  const handleDeleteCharacter = (character: Character) => {
+    // Don't allow deleting default characters
+    if (character.isDefault) return;
+    
+    deleteCharacter(character.id);
   };
 
   return (
@@ -222,8 +239,12 @@ export const CharacterCollection = () => {
                     </div>
                   )}
                   
-                  {/* Imported badge */}
-                  {character.isImported && (
+                  {/* Default or imported badge */}
+                  {character.isDefault ? (
+                    <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs py-0.5 px-2 rounded-full flex items-center gap-1">
+                      <Shield size={10} /> Default
+                    </div>
+                  ) : character.isImported && (
                     <div className="absolute top-1 right-1 bg-purple-500 text-white text-xs py-0.5 px-2 rounded-full">
                       Imported
                     </div>
@@ -254,8 +275,7 @@ export const CharacterCollection = () => {
                         <h3 className="font-medium text-white">{character.name}</h3>
                         <p className="text-xs text-gray-400">
                           {getCharacterTypeLabel(character)}
-                          {' · '}
-                          {formatDate(character.createdAt)}
+                          {character.isDefault ? '' : ` · ${formatDate(character.createdAt)}`}
                         </p>
                       </div>
                       <div className="flex gap-1">
@@ -266,20 +286,26 @@ export const CharacterCollection = () => {
                         >
                           <Download size={14} />
                         </button>
-                        <button 
-                          onClick={() => handleStartEdit(character)} 
-                          className="p-1 text-blue-400 hover:text-blue-300"
-                          title="Edit name"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button 
-                          onClick={() => deleteCharacter(character.id)} 
-                          className="p-1 text-red-400 hover:text-red-300"
-                          title="Delete character"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        
+                        {/* Only show edit/delete buttons for non-default characters */}
+                        {!character.isDefault && (
+                          <>
+                            <button 
+                              onClick={() => handleStartEdit(character)} 
+                              className="p-1 text-blue-400 hover:text-blue-300"
+                              title="Edit name"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteCharacter(character)} 
+                              className="p-1 text-red-400 hover:text-red-300"
+                              title="Delete character"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
