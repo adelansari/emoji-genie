@@ -1,9 +1,15 @@
-import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect, ReactNode, useMemo } from 'react';
 import { useEmojiCustomization, EmojiType } from './EmojiCustomizationContext'; // Import EmojiType
 import { loadImageFromLocalStorage } from '../utils/exportUtils';
 
 // Add game type
 export type GameType = 'flappy' | 'runner' | 'puzzle';
+
+// Define storage keys based on emoji type
+export const CHARACTER_IMAGE_KEYS = {
+  emoji: 'flappyEmojiCharacter',
+  sticker: 'flappyStickerCharacter'
+};
 
 interface GameContextType {
   isPlaying: boolean;
@@ -35,7 +41,6 @@ export const useGame = () => {
 
 // Storage keys - Keep only generic ones if needed, or remove if managed per-game
 const HIGH_SCORE_KEY = 'genericHighScore'; // Example: Make generic or remove
-const CHARACTER_IMAGE_KEY = 'flappyEmojiCharacter'; // Keep for now
 const GAME_TYPE_KEY = 'selectedGameType'; // Keep
 
 interface GameProviderProps {
@@ -52,6 +57,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [gameType, setGameType] = useState<GameType>('flappy');
 
   const { emojiType } = useEmojiCustomization();
+  
+  // Get the correct storage key based on the current emoji type
+  const currentCharacterImageKey = useMemo(() => 
+    CHARACTER_IMAGE_KEYS[emojiType],
+  [emojiType]);
 
   // Load data from local storage on component mount
   useEffect(() => {
@@ -61,8 +71,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setHighScore(parseInt(storedHighScore, 10));
     }
 
-    // Load character image
-    const storedCharacterImage = loadImageFromLocalStorage(CHARACTER_IMAGE_KEY);
+    // Load character image based on current emoji type
+    const storedCharacterImage = loadImageFromLocalStorage(currentCharacterImageKey);
     if (storedCharacterImage) {
       setCharacterImageUrl(storedCharacterImage);
     }
@@ -72,7 +82,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     if (storedGameType) {
       setGameType(storedGameType);
     }
-  }, []);
+  }, [currentCharacterImageKey]); // Re-run when the key changes
 
   // Save data to local storage whenever it changes
   useEffect(() => {
@@ -87,12 +97,21 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   }, [gameType]);
 
-  // Reset game when switching emoji type
+  // Load the appropriate character when switching emoji type
   useEffect(() => {
+    // Load character image when emoji type changes
+    const storedCharacterImage = loadImageFromLocalStorage(currentCharacterImageKey);
+    if (storedCharacterImage) {
+      setCharacterImageUrl(storedCharacterImage);
+    } else {
+      // If no character found for this emoji type, set to null
+      setCharacterImageUrl(null);
+    }
+    
     if (isPlaying) {
       resetGame();
     }
-  }, [emojiType]);
+  }, [emojiType, currentCharacterImageKey]);
 
   const startGame = () => {
     setIsPlaying(true);

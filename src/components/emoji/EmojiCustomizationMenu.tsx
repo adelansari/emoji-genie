@@ -2,10 +2,8 @@ import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 import { EmojiPartType } from '../../data/emoji/emojiModels';
 import EmojiModelGallery from "./EmojiModelGallery";
 import { useGame } from "../../context/GameContext";
+import { CHARACTER_IMAGE_KEYS } from "../../context/GameContext";
 import CustomizationMenuBase, { EditMode } from "../shared/CustomizationMenuBase";
-
-// Constants
-const CHARACTER_IMAGE_KEY = 'flappyEmojiCharacter';
 
 export default function EmojiCustomizationMenu() {
   const {
@@ -55,7 +53,7 @@ export default function EmojiCustomizationMenu() {
       title="Emoji Customization"
       selectedPart={selectedEmojiPart}
       canvasContainerId="emoji-canvas-container"
-      storageKey={CHARACTER_IMAGE_KEY}
+      storageKey={CHARACTER_IMAGE_KEYS.emoji}
       primaryColor="yellow"
       accentColor="yellow"
       navigationTabs={navigationTabs}
