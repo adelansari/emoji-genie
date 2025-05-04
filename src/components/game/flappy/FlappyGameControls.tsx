@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../../../context/GameContext'; // Generic game state/controls
 import { useFlappyAchievements } from './hooks/useFlappyAchievements'; // Flappy specific state
 import { useEmojiCustomization } from '../../../context/EmojiCustomizationContext';
+import { useCharacterCollection } from '../../../context/CharacterCollectionContext';
 import { Play, RotateCcw, HelpCircle, Medal } from 'lucide-react';
 import { memo } from 'react';
 
@@ -26,6 +27,23 @@ const FlappyGameControls = () => {
   } = useFlappyAchievements();
   
   const { emojiType } = useEmojiCustomization();
+  const { getActiveCharacter } = useCharacterCollection();
+  
+  // Get active character to determine its type
+  const activeCharacter = getActiveCharacter();
+
+  // Get character type label for display
+  const getCharacterTypeLabel = () => {
+    if (!activeCharacter) {
+      return emojiType === 'emoji' ? 'Emoji' : 'Sticker';
+    }
+    
+    if (activeCharacter.isImported) {
+      return 'Imported';
+    }
+    
+    return activeCharacter.type.charAt(0).toUpperCase() + activeCharacter.type.slice(1);
+  };
   
   const [showInstructions, setShowInstructions] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
@@ -85,7 +103,7 @@ const FlappyGameControls = () => {
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-400">Current Character</p>
-          <p className="text-xl font-bold text-yellow-300">{emojiType === 'emoji' ? 'Emoji' : 'Sticker'}</p>
+          <p className="text-xl font-bold text-yellow-300">{getCharacterTypeLabel()}</p>
         </div>
       </div>
       
