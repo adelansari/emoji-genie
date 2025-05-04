@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGame } from '../../context/GameContext';
 import { useCharacterCollection, Character } from '../../context/CharacterCollectionContext';
 import GameSelector from './GameSelector';
-import { ArrowLeft, Home, ChevronRight, UserCircle2 } from 'lucide-react';
+import { Gamepad, Home, ChevronRight, UserCircle2, ArrowLeft } from 'lucide-react';
 import { GAME_DATA, getGameById, getDefaultGame } from '../../data/games/gameData';
 import { GameType } from '../../context/GameContext'; // Import GameType
 
@@ -17,6 +17,14 @@ const GamePage = () => {
   
   // Get active character from collection
   const activeCharacter = getActiveCharacter();
+
+  // Sync active character with game display when component mounts or active character changes
+  useEffect(() => {
+    if (activeCharacter) {
+      console.log('GamePage: Syncing active character:', activeCharacter.name);
+      setCharacterImageUrl(activeCharacter.imageUrl);
+    }
+  }, [activeCharacterId, activeCharacter, setCharacterImageUrl]);
   
   // Get character type label for display
   const getCharacterTypeLabel = (character: Character) => {
@@ -72,7 +80,7 @@ const GamePage = () => {
             }}
             className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow cursor-pointer transition-colors"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft />
             Back
           </button>
         </div>
@@ -188,18 +196,11 @@ const GamePage = () => {
           
           <div className="flex gap-2">
             <button
-              onClick={() => setShowCharacterSelector(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow cursor-pointer transition-colors"
-            >
-              <UserCircle2 size={16} />
-              {activeCharacter ? 'Change Character' : 'Select Character'}
-            </button>
-            <button
               onClick={() => setShowingGame(false)}
               className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 hover:text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow cursor-pointer transition-colors"
             >
-              <ArrowLeft size={16} />
-              Back to Games
+              <Gamepad />
+              Games
             </button>
           </div>
         </div>
