@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../../context/GameContext';
-import { useCharacterCollection } from '../../context/CharacterCollectionContext';
+import { useCharacterCollection, Character } from '../../context/CharacterCollectionContext';
 import GameSelector from './GameSelector';
 import { ArrowLeft, Home, ChevronRight, UserCircle2 } from 'lucide-react';
 import { GAME_DATA, getGameById, getDefaultGame } from '../../data/games/gameData';
@@ -17,6 +17,14 @@ const GamePage = () => {
   
   // Get active character from collection
   const activeCharacter = getActiveCharacter();
+  
+  // Get character type label for display
+  const getCharacterTypeLabel = (character: Character) => {
+    if (character.isImported) {
+      return 'Imported';
+    }
+    return character.type.charAt(0).toUpperCase() + character.type.slice(1);
+  };
   
   // Handler for game selection - fix type error by casting to GameType
   const handleGameSelect = (selectedGameType: string) => {
@@ -80,16 +88,25 @@ const GamePage = () => {
                     ? 'border-yellow-500 ring-2 ring-yellow-500' 
                     : 'border-gray-600 hover:border-gray-500'}`}
               >
-                <div className="h-24 flex items-center justify-center overflow-hidden bg-gray-800">
-                  <img 
-                    src={character.imageUrl} 
-                    alt={character.name} 
-                    className="max-w-full max-h-full object-contain"
-                  />
+                <div className="relative">
+                  <div className="h-24 flex items-center justify-center overflow-hidden bg-gray-800">
+                    <img 
+                      src={character.imageUrl} 
+                      alt={character.name} 
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  
+                  {/* Imported badge */}
+                  {character.isImported && (
+                    <div className="absolute top-1 right-1 bg-purple-500 text-white text-xs py-0.5 px-2 rounded-full">
+                      Imported
+                    </div>
+                  )}
                 </div>
                 <div className="p-2">
                   <h3 className="text-white font-medium truncate">{character.name}</h3>
-                  <p className="text-xs text-gray-400">{character.type.charAt(0).toUpperCase() + character.type.slice(1)}</p>
+                  <p className="text-xs text-gray-400">{getCharacterTypeLabel(character)}</p>
                 </div>
               </div>
             ))}
@@ -153,10 +170,15 @@ const GamePage = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <span className="text-sm text-gray-300">{activeCharacter.name}</span>
+                <div className="flex flex-col">
+                  <span className="text-sm text-gray-300">{activeCharacter.name}</span>
+                  <span className="text-xs text-gray-400">
+                    {getCharacterTypeLabel(activeCharacter)}
+                  </span>
+                </div>
                 <button
                   onClick={() => setShowCharacterSelector(true)}
-                  className="text-xs text-blue-400 hover:text-blue-300"
+                  className="text-xs text-blue-400 hover:text-blue-300 ml-2"
                 >
                   Change
                 </button>

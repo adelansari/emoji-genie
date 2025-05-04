@@ -4,12 +4,14 @@ import { useEmojiCustomization } from '../context/EmojiCustomizationContext';
 import { useGame } from '../context/GameContext';
 import { Download, Trash2, Plus, Upload, Edit, Check, Star } from 'lucide-react';
 
+type FilterTab = 'all' | 'emoji' | 'sticker' | 'imported';
+
 export const CharacterCollection = () => {
   const { characters, activeCharacterId, addCharacter, importCharacter, deleteCharacter, setActiveCharacter, updateCharacter } = useCharacterCollection();
   const { emojiType } = useEmojiCustomization();
   const { setCharacterImageUrl } = useGame();
   
-  const [activeTab, setActiveTab] = useState<'all' | 'emoji' | 'sticker'>('all');
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
@@ -17,9 +19,20 @@ export const CharacterCollection = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter characters based on active tab
-  const filteredCharacters = activeTab === 'all' 
-    ? characters
-    : characters.filter(char => char.type === activeTab);
+  const filteredCharacters = (() => {
+    switch (activeTab) {
+      case 'all':
+        return characters;
+      case 'imported':
+        return characters.filter(char => char.isImported);
+      case 'emoji':
+        return characters.filter(char => char.type === 'emoji' && !char.isImported);
+      case 'sticker':
+        return characters.filter(char => char.type === 'sticker' && !char.isImported);
+      default:
+        return characters;
+    }
+  })();
 
   // Sort characters by creation date (newest first)
   const sortedCharacters = [...filteredCharacters].sort((a, b) => b.createdAt - a.createdAt);
@@ -80,6 +93,14 @@ export const CharacterCollection = () => {
     return new Date(timestamp).toLocaleDateString();
   };
 
+  // Get character type label for display
+  const getCharacterTypeLabel = (character: Character) => {
+    if (character.isImported) {
+      return 'Imported';
+    }
+    return character.type.charAt(0).toUpperCase() + character.type.slice(1);
+  };
+
   return (
     <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-xl overflow-hidden">
       <div className="p-6">
@@ -132,7 +153,7 @@ export const CharacterCollection = () => {
         )}
 
         {/* Filter tabs */}
-        <div className="mb-6 bg-gray-700 rounded-md inline-flex p-1">
+        <div className="mb-6 bg-gray-700 rounded-md inline-flex p-1 overflow-x-auto whitespace-nowrap">
           <button
             onClick={() => setActiveTab('all')}
             className={`py-1 px-4 rounded ${activeTab === 'all' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:text-white'}`}
@@ -150,6 +171,12 @@ export const CharacterCollection = () => {
             className={`py-1 px-4 rounded ${activeTab === 'sticker' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:text-white'}`}
           >
             Sticker
+          </button>
+          <button
+            onClick={() => setActiveTab('imported')}
+            className={`py-1 px-4 rounded ${activeTab === 'imported' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:text-white'}`}
+          >
+            Imported
           </button>
         </div>
 
@@ -184,6 +211,13 @@ export const CharacterCollection = () => {
                       <Star size={14} fill="currentColor" />
                     </div>
                   )}
+                  
+                  {/* Imported badge */}
+                  {character.isImported && (
+                    <div className="absolute top-1 right-1 bg-purple-500 text-white text-xs py-0.5 px-2 rounded-full">
+                      Imported
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-2">
@@ -209,7 +243,7 @@ export const CharacterCollection = () => {
                       <div>
                         <h3 className="font-medium text-white">{character.name}</h3>
                         <p className="text-xs text-gray-400">
-                          {character.isImported ? 'Imported' : character.type.charAt(0).toUpperCase() + character.type.slice(1)}
+                          {getCharacterTypeLabel(character)}
                           {' · '}
                           {formatDate(character.createdAt)}
                         </p>
