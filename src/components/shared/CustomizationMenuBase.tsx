@@ -69,7 +69,7 @@ export default function CustomizationMenuBase({
     emojiType
   } = useEmojiCustomization();
   
-  const { addCharacter, setActiveCharacter } = useCharacterCollection();
+  const { characters, addCharacter, setActiveCharacter } = useCharacterCollection();
   
   const [mode, setMode] = useState<EditMode>("none");
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
@@ -83,6 +83,21 @@ export default function CustomizationMenuBase({
   const [isAdjustDrawerOpen, setIsAdjustDrawerOpen] = useState(false);
   const [drawerAnimation, setDrawerAnimation] = useState<'entering' | 'entered' | 'exiting' | 'exited'>('exited');
   const drawerTimeoutRef = useRef<number | null>(null);
+
+  // Generate a default name for the character based on type
+  const generateDefaultName = () => {
+    // Count existing characters of this type to generate the next number
+    const typeCharacters = characters.filter(c => c.type === emojiType);
+    const nextNumber = (typeCharacters.length + 1).toString().padStart(2, '0');
+    return `${emojiType.charAt(0).toUpperCase() + emojiType.slice(1)}${nextNumber}`;
+  };
+
+  // Set a default name when showing the input dialog
+  useEffect(() => {
+    if (showNameInput && characterName === '') {
+      setCharacterName(generateDefaultName());
+    }
+  }, [showNameInput]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -135,6 +150,12 @@ export default function CustomizationMenuBase({
       setIsAdjustDrawerOpen(false);
       setDrawerAnimation('exited');
     }, 300); // Match this to the CSS transition duration
+  };
+
+  // Handle canceling the save dialog
+  const handleCancelSave = () => {
+    setShowNameInput(false);
+    setCharacterName("");
   };
 
   const renderEditControl = () => {
@@ -470,17 +491,27 @@ export default function CustomizationMenuBase({
               className="flex-grow px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
-            <button
-              onClick={handleSaveToCollection}
-              disabled={!characterName.trim()}
-              className={`px-3 py-1 rounded-md ${
-                !characterName.trim()
-                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700 text-white"
-              }`}
-            >
-              <ArrowRight size={18} />
-            </button>
+            <div className="flex gap-1">
+              <button
+                onClick={handleCancelSave}
+                className="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white"
+                title="Cancel"
+              >
+                <X size={18} />
+              </button>
+              <button
+                onClick={handleSaveToCollection}
+                disabled={!characterName.trim()}
+                className={`px-3 py-1 rounded-md ${
+                  !characterName.trim()
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
+                title="Continue"
+              >
+                <ArrowRight size={18} />
+              </button>
+            </div>
           </div>
         </div>
       )}
