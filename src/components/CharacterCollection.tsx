@@ -1,4 +1,4 @@
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { useCharacterCollection, Character } from '../context/CharacterCollectionContext';
 import { useEmojiCustomization } from '../context/EmojiCustomizationContext';
 import { useGame } from '../context/GameContext';
@@ -18,6 +18,17 @@ export const CharacterCollection = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importName, setImportName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync active character with game display when component loads or active character changes
+  useEffect(() => {
+    if (activeCharacterId) {
+      const activeChar = characters.find(c => c.id === activeCharacterId);
+      if (activeChar) {
+        console.log('Syncing active character:', activeChar.name);
+        setCharacterImageUrl(activeChar.imageUrl);
+      }
+    }
+  }, [activeCharacterId, characters, setCharacterImageUrl]);
 
   // Filter characters based on active tab
   const filteredCharacters = (() => {
