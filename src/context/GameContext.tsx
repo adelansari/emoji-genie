@@ -25,7 +25,7 @@ interface GameContextType {
   incrementScore: () => void;
   resetGame: () => void;
   setGameSpeed: (speed: number) => void;
-  setCharacterImageUrl: (url: string) => void;
+  setCharacterImageUrl: (url: string | null) => void;
   setGameType: (type: GameType) => void;
 }
 

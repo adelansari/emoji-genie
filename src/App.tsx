@@ -14,8 +14,8 @@ function App() {
 
   return (
     <EmojiCustomizationProvider>
-      <GameProvider>
-        <CharacterCollectionProvider>
+      <CharacterCollectionProvider>
+        <GameProvider>
           <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-800">
             <h1 className="text-4xl font-bold mb-2 text-yellow-400 tracking-wider">
               Emoji Genie
@@ -60,8 +60,8 @@ function App() {
               <GamePage />
             )}
           </div>
-        </CharacterCollectionProvider>
-      </GameProvider>
+        </GameProvider>
+      </CharacterCollectionProvider>
     </EmojiCustomizationProvider>
   );
 }
