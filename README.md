@@ -86,6 +86,7 @@ This command compiles the TypeScript code and bundles the application for produc
 ![](/public/screenshots/02.jpeg)
 ![](/public/screenshots/03.jpeg)
 ![](/public/screenshots/04.jpeg)
+![](/public/screenshots/05.jpeg)
 
 ## 🧩 Application Architecture
 

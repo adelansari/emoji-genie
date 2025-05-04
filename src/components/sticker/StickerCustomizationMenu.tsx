@@ -2,10 +2,8 @@ import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
 import { StickerPartType, StickerSubcategoryType, subcategories as stickerSubcategories } from '../../data/sticker/stickerModels';
 import StickerModelGallery from "./StickerModelGallery";
 import { useGame } from "../../context/GameContext";
+import { CHARACTER_IMAGE_KEYS } from "../../context/GameContext";
 import CustomizationMenuBase from "../shared/CustomizationMenuBase";
-
-// Constants
-const CHARACTER_IMAGE_KEY = 'flappyStickerCharacter';
 
 /**
  * Sticker-specific customization menu with tabs for Face, Eyes, Hair, Others
@@ -84,7 +82,7 @@ export default function StickerCustomizationMenu() {
       selectedPart={selectedStickerPart}
       selectedSubcategory={selectedStickerSubcategory}
       canvasContainerId="sticker-canvas-container"
-      storageKey={CHARACTER_IMAGE_KEY}
+      storageKey={CHARACTER_IMAGE_KEYS.sticker}
       primaryColor="pink"
       accentColor="purple"
       navigationTabs={navigationTabs}

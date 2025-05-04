@@ -5,8 +5,9 @@ import RotationJoystick from "./RotationJoystick";
 import ColorPicker from "./ColorPicker";
 import MultiSelectToggle from "./MultiSelectToggle";
 import { exportElementAsImage, saveImageToLocalStorage, downloadImage } from "../../utils/exportUtils";
-import { Save, Download, SlidersHorizontal, X, CheckSquare } from "lucide-react";
+import { Save, Download, SlidersHorizontal, X, CheckSquare, Film, ArrowRight } from "lucide-react";
 import { useEmojiCustomization } from "../../context/EmojiCustomizationContext";
+import { useCharacterCollection } from "../../context/CharacterCollectionContext";
 
 export type EditMode = "none" | "position" | "size" | "rotation" | "color";
 export const EDIT_MODES: EditMode[] = ["position", "size", "rotation", "color"];
@@ -64,18 +65,39 @@ export default function CustomizationMenuBase({
   const { 
     isMultiSelectMode,
     selectedParts,
-    clearSelectedParts
+    clearSelectedParts,
+    emojiType
   } = useEmojiCustomization();
+  
+  const { characters, addCharacter, setActiveCharacter } = useCharacterCollection();
   
   const [mode, setMode] = useState<EditMode>("none");
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle');
+  const [saveToCollectionStatus, setSaveToCollectionStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [characterName, setCharacterName] = useState("");
+  const [showNameInput, setShowNameInput] = useState(false);
   
   // State for canvas size to pass to joystick
   const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
   const [isAdjustDrawerOpen, setIsAdjustDrawerOpen] = useState(false);
   const [drawerAnimation, setDrawerAnimation] = useState<'entering' | 'entered' | 'exiting' | 'exited'>('exited');
   const drawerTimeoutRef = useRef<number | null>(null);
+
+  // Generate a default name for the character based on type
+  const generateDefaultName = () => {
+    // Count existing characters of this type to generate the next number
+    const typeCharacters = characters.filter(c => c.type === emojiType);
+    const nextNumber = (typeCharacters.length + 1).toString().padStart(2, '0');
+    return `${emojiType.charAt(0).toUpperCase() + emojiType.slice(1)}${nextNumber}`;
+  };
+
+  // Set a default name when showing the input dialog
+  useEffect(() => {
+    if (showNameInput && characterName === '') {
+      setCharacterName(generateDefaultName());
+    }
+  }, [showNameInput]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -130,6 +152,12 @@ export default function CustomizationMenuBase({
     }, 300); // Match this to the CSS transition duration
   };
 
+  // Handle canceling the save dialog
+  const handleCancelSave = () => {
+    setShowNameInput(false);
+    setCharacterName("");
+  };
+
   const renderEditControl = () => {
     switch (mode) {
       case "position":
@@ -168,7 +196,45 @@ export default function CustomizationMenuBase({
     return spaced.charAt(0).toUpperCase() + spaced.slice(1);
   };
 
-  // Handle export to game
+  // Handle exporting to collection with a name
+  const handleSaveToCollection = async () => {
+    try {
+      if (!characterName.trim()) {
+        setShowNameInput(true);
+        return;
+      }
+      
+      setSaveToCollectionStatus('saving');
+      const imageDataUrl = await exportElementAsImage(canvasContainerId);
+      
+      // Still save to localStorage for backwards compatibility
+      saveImageToLocalStorage(imageDataUrl, storageKey);
+      
+      // Add to collection
+      const id = addCharacter({
+        name: characterName,
+        imageUrl: imageDataUrl,
+        type: emojiType
+      });
+      
+      // Set as active character
+      setActiveCharacter(id);
+      onSetCharacterImageUrl(imageDataUrl);
+      
+      setSaveToCollectionStatus('success');
+      setTimeout(() => {
+        setSaveToCollectionStatus('idle');
+        setShowNameInput(false);
+        setCharacterName("");
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to save to collection:', error);
+      setSaveToCollectionStatus('error');
+      setTimeout(() => setSaveToCollectionStatus('idle'), 3000);
+    }
+  };
+
+  // Handle export to game (legacy)
   const handleExportToGame = async () => {
     try {
       setExportStatus('exporting');
@@ -410,26 +476,66 @@ export default function CustomizationMenuBase({
         </div>
       )}
       
+      {/* Name input for saving to collection */}
+      {showNameInput && (
+        <div className="bg-gray-700/90 p-3 rounded-lg mb-2">
+          <label className="block text-sm font-medium text-white mb-1">
+            Character Name:
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={characterName}
+              onChange={(e) => setCharacterName(e.target.value)}
+              placeholder={`My ${emojiType.charAt(0).toUpperCase() + emojiType.slice(1)}`}
+              className="flex-grow px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+            />
+            <div className="flex gap-1">
+              <button
+                onClick={handleCancelSave}
+                className="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white"
+                title="Cancel"
+              >
+                <X size={18} />
+              </button>
+              <button
+                onClick={handleSaveToCollection}
+                disabled={!characterName.trim()}
+                className={`px-3 py-1 rounded-md ${
+                  !characterName.trim()
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
+                title="Continue"
+              >
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Action buttons */}
-      <div className="mt-auto pt-4 grid grid-cols-2 gap-3"> {/* Use mt-auto to push to bottom if needed */}
-        {/* Export to Game button */}
+      <div className="mt-auto pt-4 grid grid-cols-2 gap-3">
+        {/* Save to Collection button */}
         <button
-          onClick={handleExportToGame}
-          disabled={exportStatus === 'exporting'}
+          onClick={handleSaveToCollection}
+          disabled={saveToCollectionStatus === 'saving'}
           className={`py-3 px-4 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-150
-            ${exportStatus === 'exporting'
+            ${saveToCollectionStatus === 'saving'
               ? "bg-gray-600 cursor-not-allowed"
-              : exportStatus === 'success'
+              : saveToCollectionStatus === 'success'
                 ? "bg-green-600 hover:bg-green-700"
-                : exportStatus === 'error'
+                : saveToCollectionStatus === 'error'
                   ? "bg-red-600 hover:bg-red-700"
                   : `bg-${primaryColor}-500 hover:bg-${primaryColor}-600 text-gray-900 hover:text-gray-900`
             }`}
         >
-          {exportStatus === 'idle' && <><Save size={16} /> Export to Game</>}
-          {exportStatus === 'exporting' && 'Exporting...'}
-          {exportStatus === 'success' && 'Exported!'}
-          {exportStatus === 'error' && 'Export Failed'}
+          {saveToCollectionStatus === 'idle' && <><Film size={16} /> {showNameInput ? 'Continue' : 'Save to Collection'}</>}
+          {saveToCollectionStatus === 'saving' && 'Saving...'}
+          {saveToCollectionStatus === 'success' && 'Saved!'}
+          {saveToCollectionStatus === 'error' && 'Save Failed'}
         </button>
         
         {/* Download button */}
