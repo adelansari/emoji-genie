@@ -1,8 +1,15 @@
-import { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
-import { useGame } from '../../../context/GameContext';
-import { useEmojiCustomization } from '../../../context/EmojiCustomizationContext';
+import { useRef, memo, useCallback, useMemo, useState, useEffect } from 'react';
+import { useGame } from '../../../context/GameContext'; // Generic game context
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
+
+// Import custom hooks from consolidated export
+import { 
+  useCanvasSize, 
+  useFlappyPhysics, 
+  useFlappyAchievements, // Flappy specific state/logic hook
+  useFlappyControls 
+} from './hooks';
 
 // Import modular components
 import FlappyCharacter from './FlappyCharacter';
@@ -12,30 +19,14 @@ import FlappyUI from './FlappyUI';
 import FlappyEffects from './FlappyEffects';
 import FlappyAchievement from './FlappyAchievement';
 import ThemeSwitch from './ThemeSwitch';
-import { BIRD_SIZE_BASE, HIGH_SCORE_ACHIEVEMENTS, GAME_COUNT_ACHIEVEMENTS } from './config';
-import { getResponsiveCanvasSize, calculateGamePhysics } from './config';
-import { updatePipes, checkCollision } from './gameUtils';
-import type { PipeData } from './FlappyPipes';
-import {
-  GameTheme,
-  StoredAchievement,
-  getHighScore,
-  saveHighScore,
-  getGameTheme,
-  saveGameTheme,
-  getPlayCount,
-  incrementPlayCount,
-  getTotalPipesPassed,
-  incrementTotalPipesPassed,
-  getAchievements,
-  saveAchievements
-} from './storageUtils';
+
+// Import constants and types
+import { BIRD_SIZE_BASE } from './config';
 
 const FlappyGame = () => {
-  // Game context state from Context API
+  // Generic game state from Context API
   const { 
     score, 
-    highScore, 
     isPlaying, 
     gameOver, 
     startGame: contextStartGame, 
@@ -45,197 +36,47 @@ const FlappyGame = () => {
     gameSpeed, 
     characterImageUrl, 
     emojiType,
-    playCount,
-    totalPipesPassed,
-    achievements
   } = useGame();
+
+  // Flappy specific state and handlers from custom hook
+  const {
+    localHighScore,
+    gameTheme,
+    achievements, // Use achievements from the hook
+    handleGameStart,
+    handleGameEnd,
+    handlePipePassed,
+    handleGameReset, // Use reset handler from hook if needed
+    handleThemeChange
+  } = useFlappyAchievements();
   
-  // Refs for performance optimization
+  // Get responsive canvas size
+  const canvasSize = useCanvasSize();
+  
+  // Stage ref for Konva
   const stageRef = useRef<Konva.Stage>(null);
-  const animationRef = useRef<number | null>(null);
-  const isInitializedRef = useRef<boolean>(false);
-  
-  // Game state refs to avoid re-renders
-  const birdPositionRef = useRef({ x: 0, y: 0 });
-  const birdVelocityRef = useRef(0);
-  const pipesRef = useRef<PipeData[]>([]);
-  const frameCountRef = useRef(0);
-  const physicsDeltaRef = useRef(0);
-  
-  // Local state (minimized to improve performance)
-  const [canvasSize, setCanvasSize] = useState(getResponsiveCanvasSize());
-  const [birdPosition, setBirdPosition] = useState({ x: canvasSize.width * 0.2, y: canvasSize.height / 2 });
-  const [birdVelocity, setBirdVelocity] = useState(0);
-  const [pipes, setPipes] = useState<PipeData[]>([]);
-  const [characterImage, setCharacterImage] = useState<HTMLImageElement | null>(null);
-  const [gameTheme, setGameTheme] = useState<GameTheme>('day');
-  const [showDeathEffect, setShowDeathEffect] = useState(false);
-  const [localAchievements, setLocalAchievements] = useState<StoredAchievement[]>([]);
-  const [pipesPassedThisGame, setPipesPassedThisGame] = useState(0);
-  const [localHighScore, setLocalHighScore] = useState(highScore);
-  const [localPlayCount, setLocalPlayCount] = useState(playCount);
-  const [localTotalPipesPassed, setLocalTotalPipesPassed] = useState(totalPipesPassed);
   
   // Dynamic calculations based on canvas size
-  const birdSize = useMemo(() => BIRD_SIZE_BASE * (canvasSize.width / 600), [canvasSize.width]);
-  const pipeGap = useMemo(() => canvasSize.height * 0.35, [canvasSize.height]);
+  const birdSize = useMemo(() => 
+    BIRD_SIZE_BASE * (canvasSize.width / 600), 
+    [canvasSize.width]
+  );
+  const pipeGap = useMemo(() => 
+    canvasSize.height * 0.35, 
+    [canvasSize.height]
+  );
   
-  // Calculate physics constants based on difficulty
-  const { gravity, flapStrength } = useMemo(() => calculateGamePhysics(gameSpeed), [gameSpeed]);
+  // Character image handling
+  const [characterImage, setCharacterImage] = useState<HTMLImageElement | null>(null);
+  const characterColor = useMemo(() => 
+    emojiType === 'emoji' ? '#FACC15' : '#FF6B6B', 
+    [emojiType]
+  );
   
-  // Default character color for fallback
-  const characterColor = useMemo(() => {
-    return emojiType === 'emoji' ? '#FACC15' : '#FF6B6B';
-  }, [emojiType]);
-
-  // Initialize refs with current state
-  useEffect(() => {
-    birdPositionRef.current = { x: canvasSize.width * 0.2, y: canvasSize.height / 2 };
-  }, [canvasSize]);
+  // Visual effects state (remains local to FlappyGame)
+  const [showDeathEffect, setShowDeathEffect] = useState(false);
   
-  // Initialize from localStorage on first load
-  useEffect(() => {
-    if (isInitializedRef.current) return;
-    isInitializedRef.current = true;
-    
-    // Load high score
-    const savedHighScore = getHighScore();
-    if (savedHighScore > highScore) {
-      setLocalHighScore(savedHighScore);
-    }
-    
-    // Load theme
-    setGameTheme(getGameTheme());
-    
-    // Load play count
-    setLocalPlayCount(getPlayCount());
-    
-    // Load total pipes passed
-    setLocalTotalPipesPassed(getTotalPipesPassed());
-    
-    // Load or initialize achievements
-    const savedAchievements = getAchievements();
-    
-    if (savedAchievements.length === 0) {
-      // Initialize achievements if none exist in storage
-      const initialAchievements: StoredAchievement[] = [
-        ...HIGH_SCORE_ACHIEVEMENTS.map(a => ({
-          ...a,
-          progress: 0,
-          unlocked: false
-        })),
-        ...GAME_COUNT_ACHIEVEMENTS.map(a => ({
-          ...a,
-          progress: 0,
-          unlocked: false
-        }))
-      ];
-      
-      setLocalAchievements(initialAchievements);
-      saveAchievements(initialAchievements);
-    } else {
-      setLocalAchievements(savedAchievements);
-    }
-  }, []);
-
-  // Handle context state updates
-  const startGame = useCallback(() => {
-    contextStartGame();
-    setPipesPassedThisGame(0);
-    
-    // Initialize bird position and velocity in refs
-    birdPositionRef.current = { x: canvasSize.width * 0.2, y: canvasSize.height / 2 };
-    birdVelocityRef.current = 0;
-    pipesRef.current = [];
-    
-    // Set initial react state too
-    setBirdPosition(birdPositionRef.current);
-    setBirdVelocity(0);
-    setPipes([]);
-    
-    // Increment play count in localStorage
-    const newPlayCount = incrementPlayCount();
-    setLocalPlayCount(newPlayCount);
-    
-    // Update game count achievements
-    updateAchievements('games', newPlayCount);
-  }, [contextStartGame, canvasSize.width, canvasSize.height]);
-  
-  const endGame = useCallback(() => {
-    contextEndGame();
-    setShowDeathEffect(true);
-    
-    // Save high score if current score is higher
-    if (score > localHighScore) {
-      saveHighScore(score);
-      setLocalHighScore(score);
-      
-      // Update score achievements
-      updateAchievements('score', score);
-    }
-  }, [contextEndGame, score, localHighScore]);
-  
-  const incrementScore = useCallback(() => {
-    contextIncrementScore();
-    setPipesPassedThisGame(prev => prev + 1);
-    
-    // Update total pipes passed in localStorage
-    const newTotal = incrementTotalPipesPassed(1);
-    setLocalTotalPipesPassed(newTotal);
-  }, [contextIncrementScore]);
-  
-  const resetGame = useCallback(() => {
-    contextResetGame();
-    setShowDeathEffect(false);
-    setPipesPassedThisGame(0);
-    
-    // Reset positions
-    birdPositionRef.current = { x: canvasSize.width * 0.2, y: canvasSize.height / 2 };
-    birdVelocityRef.current = 0;
-    pipesRef.current = [];
-    
-    // Update React state to match
-    setBirdPosition(birdPositionRef.current);
-    setBirdVelocity(0);
-    setPipes([]);
-  }, [contextResetGame, canvasSize]);
-  
-  // Handle theme change
-  const handleThemeChange = useCallback((newTheme: GameTheme) => {
-    setGameTheme(newTheme);
-    saveGameTheme(newTheme);
-  }, []);
-  
-  // Update achievements and save to localStorage
-  const updateAchievements = useCallback((type: 'score' | 'games', value: number) => {
-    setLocalAchievements(prevAchievements => {
-      const updatedAchievements = prevAchievements.map(achievement => {
-        // Only update relevant achievement types
-        if (
-          (type === 'score' && achievement.id.startsWith('score_')) ||
-          (type === 'games' && achievement.id.startsWith('games_'))
-        ) {
-          const newProgress = type === 'score' ? value : value;
-          const unlocked = newProgress >= achievement.milestone;
-          
-          return {
-            ...achievement,
-            progress: newProgress,
-            unlocked: unlocked
-          };
-        }
-        
-        return achievement;
-      });
-      
-      // Save to localStorage
-      saveAchievements(updatedAchievements);
-      
-      return updatedAchievements;
-    });
-  }, []);
-
-  // Load character image
+  // Load character image when URL changes
   useEffect(() => {
     if (characterImageUrl) {
       const img = new window.Image();
@@ -249,210 +90,60 @@ const FlappyGame = () => {
       setCharacterImage(null);
     }
   }, [characterImageUrl]);
-
-  // Bird flap function - optimized for performance
-  const flap = useCallback(() => {
-    if (!isPlaying) return;
-    
-    // Update ref immediately for responsive gameplay
-    birdVelocityRef.current = flapStrength;
-    
-    // We still need to update React state for the rotation calculation
-    setBirdVelocity(flapStrength);
-  }, [isPlaying, flapStrength]);
-
-  // Handle canvas interaction
-  const handleCanvasInteraction = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    // Don't handle click if it's propagated from the ThemeSwitch
-    if (e.target.name() === 'themeSwitch') return;
-    
-    if (!isPlaying && !gameOver) {
-      startGame();
-      // Add immediate flap on game start for better UX
-      setTimeout(() => flap(), 10);
-    } else if (isPlaying) {
-      flap();
-    } else if (gameOver) {
-      resetGame();
-    }
-  }, [isPlaying, gameOver, startGame, resetGame, flap]);
-
-  // Set up responsive canvas
-  useEffect(() => {
-    const handleResize = () => {
-      setCanvasSize(getResponsiveCanvasSize());
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Reset bird position when canvas size changes (when not playing)
-  useEffect(() => {
-    if (!isPlaying && !gameOver) {
-      const newPosition = { 
-        x: canvasSize.width * 0.2, 
-        y: canvasSize.height / 2 
-      };
-      birdPositionRef.current = newPosition;
-      setBirdPosition(newPosition);
-      birdVelocityRef.current = 0;
-      setBirdVelocity(0);
-      pipesRef.current = [];
-      setPipes([]);
-    }
-  }, [canvasSize, isPlaying, gameOver]);
-
-  // Set up space key control
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault(); // Prevent scrolling
-        if (!isPlaying && !gameOver) {
-          startGame();
-          // Add immediate flap on game start with space key
-          setTimeout(() => flap(), 10);
-        } else if (isPlaying) {
-          flap();
-        } else if (gameOver) {
-          resetGame();
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, gameOver, startGame, resetGame, flap]);
   
-  // OPTIMIZED GAME LOOP - IMPROVED FOR SMOOTH PIPE MOVEMENT
-  useEffect(() => {
-    if (!isPlaying) return;
+  // --- Integrate Context and Hook Handlers ---
+  const startGame = useCallback(() => {
+    contextStartGame(); // Call generic context start
+    handleGameStart();  // Call Flappy specific start handler (e.g., increment play count)
+  }, [contextStartGame, handleGameStart]);
+  
+  const endGame = useCallback(() => {
+    contextEndGame(score); // Call generic context end, passing final score
+    handleGameEnd(score); // Call Flappy specific end handler (e.g., save high score, update achievements)
+    setShowDeathEffect(true);
+  }, [contextEndGame, handleGameEnd, score]);
+  
+  const incrementScore = useCallback(() => {
+    contextIncrementScore(); // Call generic context score increment
+    handlePipePassed();    // Call Flappy specific handler (e.g., increment total pipes)
+  }, [contextIncrementScore, handlePipePassed]);
+  
+  const resetGame = useCallback(() => {
+    contextResetGame(); // Call generic context reset
+    handleGameReset();  // Call Flappy specific reset handler (if any logic needed)
+    setShowDeathEffect(false);
+  }, [contextResetGame, handleGameReset]);
+  // --- End Integration ---
 
-    let previousTime = 0;
-    const frameInterval = 1000 / 60; // Target 60 FPS
-    
-    const gameLoop = (currentTime: number) => {
-      if (!isPlaying) return;
-      
-      // Calculate time delta
-      const elapsed = previousTime ? currentTime - previousTime : frameInterval;
-      previousTime = currentTime;
-      
-      // Skip frame if browser tab is inactive (elapsed is too large)
-      if (elapsed > 100) {
-        animationRef.current = requestAnimationFrame(gameLoop);
-        return;
-      }
-      
-      // Physics update based on elapsed time
-      const elapsedInSeconds = elapsed / 1000;
-      physicsDeltaRef.current += elapsed;
-      
-      // Fixed physics timestep for consistent behavior
-      const physicsStep = 16; // ~60 FPS physics
-      
-      // Accumulate time and run physics in fixed steps
-      while (physicsDeltaRef.current >= physicsStep) {
-        const scaledGravity = gravity * (physicsStep / 1000) * 60;
-        
-        // Update bird physics
-        birdVelocityRef.current += scaledGravity;
-        birdPositionRef.current.y += birdVelocityRef.current;
-        
-        // Check ceiling and ground collisions
-        if (birdPositionRef.current.y < birdSize / 2) {
-          birdPositionRef.current.y = birdSize / 2;
-          birdVelocityRef.current = 0;
-        } else if (birdPositionRef.current.y > canvasSize.height - birdSize / 2) {
-          birdPositionRef.current.y = canvasSize.height - birdSize / 2;
-          endGame();
-          return;
-        }
-        
-        physicsDeltaRef.current -= physicsStep;
-      }
-
-      // Handle score increment - wrapped in function to avoid state updates in game loop
-      const handleScoreIncrement = () => {
-        incrementScore();
-      };
-      
-      // Check pipe collisions
-      if (checkCollision(
-        birdPositionRef.current.x,
-        birdPositionRef.current.y,
-        birdSize,
-        pipesRef.current,
-        canvasSize.height
-      )) {
-        endGame();
-        return;
-      }
-      
-      // Move pipes - use elapsed time for smooth movement
-      // This is key for smooth pipe animation regardless of framerate
-      pipesRef.current = updatePipes(
-        pipesRef.current, 
-        gameSpeed * (elapsed / 16.667), // Scale speed by actual frame time for consistency
-        birdPositionRef.current.x, 
-        canvasSize.width, 
-        canvasSize.height,
-        pipeGap,
-        handleScoreIncrement
-      );
-      
-      // Increment frame counter
-      frameCountRef.current++;
-      
-      // Update React state to render - IMPORTANT: Update pipes EVERY frame for smooth movement
-      // Only update bird position less frequently to save performance
-      if (frameCountRef.current % 2 === 0) {
-        setBirdPosition({...birdPositionRef.current});
-        setBirdVelocity(birdVelocityRef.current);
-      }
-      
-      // Always update pipes every frame for smooth movement
-      setPipes([...pipesRef.current]);
-      
-      // Continue the animation loop
-      animationRef.current = requestAnimationFrame(gameLoop);
-    };
-    
-    // Start the game loop and reset frame counter
-    frameCountRef.current = 0;
-    physicsDeltaRef.current = 0;
-    previousTime = 0;
-    animationRef.current = requestAnimationFrame(gameLoop);
-    
-    // Cleanup animation on unmount or game end
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-    };
-  }, [
+  // Physics and game mechanics (uses generic state like isPlaying, gameOver, gameSpeed)
+  const {
+    birdPosition,
+    birdVelocity,
+    birdRotation,
+    pipes,
+    flap,
+    resetPhysics
+  } = useFlappyPhysics(
     isPlaying,
+    gameOver,
     canvasSize,
-    birdSize,
-    gravity,
     gameSpeed,
+    birdSize,
     pipeGap,
-    endGame,
-    incrementScore
-  ]);
+    endGame, // Pass the integrated endGame handler
+    incrementScore // Pass the integrated incrementScore handler
+  );
   
-  // Calculate bird rotation for visual effect
-  const birdRotation = useMemo(() => {
-    // Smoother rotation calculations for more responsive feel
-    if (birdVelocity < 0) {
-      return Math.max(-25, birdVelocity * 1.5);
-    } else {
-      return Math.min(90, birdVelocity * 3);
-    }
-  }, [birdVelocity]);
+  // Controls and user interaction (uses generic state and integrated handlers)
+  const { handleCanvasInteraction } = useFlappyControls(
+    isPlaying,
+    gameOver,
+    startGame, // Pass integrated startGame
+    resetGame, // Pass integrated resetGame
+    flap
+  );
   
-  // Handle cleanup for death effect
+  // Handle death effect completion
   const handleEffectComplete = useCallback(() => {
     setShowDeathEffect(false);
   }, []);
@@ -469,14 +160,19 @@ const FlappyGame = () => {
         style={{ width: canvasSize.width, height: canvasSize.height }}
       >
         <Layer>
+          {/* Pass Flappy-specific state from useFlappyAchievements */}
           <FlappyBackground 
             width={canvasSize.width} 
             height={canvasSize.height} 
-            theme={gameTheme}
+            theme={gameTheme} // Use theme from hook
             isPlaying={isPlaying}
             gameSpeed={gameSpeed} 
           />
-          <FlappyPipes pipes={pipes} canvasHeight={canvasSize.height} theme={gameTheme} />
+          <FlappyPipes 
+            pipes={pipes} 
+            canvasHeight={canvasSize.height} 
+            theme={gameTheme} // Use theme from hook
+          />
           <FlappyCharacter
             x={birdPosition.x}
             y={birdPosition.y}
@@ -495,26 +191,27 @@ const FlappyGame = () => {
           <ThemeSwitch
             width={canvasSize.width}
             height={canvasSize.height}
-            currentTheme={gameTheme}
-            onThemeChange={handleThemeChange}
+            currentTheme={gameTheme} // Use theme from hook
+            onThemeChange={handleThemeChange} // Use theme handler from hook
             disabled={isPlaying}
           />
           <FlappyUI 
             width={canvasSize.width}
             height={canvasSize.height}
-            score={score}
-            highScore={localHighScore}
+            score={score} // Use score from generic context
+            highScore={localHighScore} // Use high score from hook
             isPlaying={isPlaying}
             gameOver={gameOver}
             characterImage={characterImage}
-            theme={gameTheme}
+            theme={gameTheme} // Use theme from hook
           />
+          {/* Pass achievements data from useFlappyAchievements hook */}
           <FlappyAchievement 
-            achievements={localAchievements}
+            achievements={achievements} // Use achievements from hook
             width={canvasSize.width}
             height={canvasSize.height}
             isPlaying={isPlaying}
-            gameTheme={gameTheme}
+            gameTheme={gameTheme} // Use theme from hook
           />
         </Layer>
       </Stage>

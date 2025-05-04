@@ -35,85 +35,68 @@ const ThemeSwitch: FC<ThemeSwitchProps> = ({
     onThemeChange(THEME_CYCLE[nextIndex] as GameTheme);
   };
   
-  // Theme icon colors
-  const getThemeColor = () => {
-    switch (currentTheme) {
-      case 'day': return "#FFD700"; // Sun - gold
-      case 'sunset': return "#FF7F50"; // Sunset - coral
-      case 'night': return "#E1E1E1"; // Moon - light grey
-      default: return "#FFD700";
-    }
-  };
-  
-  // Theme icon
+  // Theme-specific icons
   const renderThemeIcon = () => {
-    const iconSize = buttonSize * 0.6;
-    const centerX = buttonSize / 2;
-    const centerY = buttonSize / 2;
-    
-    switch (currentTheme) {
-      case 'day':
-        return (
-          <Circle
-            x={centerX}
-            y={centerY}
-            radius={iconSize / 2}
-            fill="#FFD700"
-          />
-        );
-      case 'sunset':
-        return (
-          <Group>
-            <Circle
-              x={centerX}
-              y={centerY}
-              radius={iconSize / 2}
-              fill="#FF7F50"
-            />
-            <Rect
-              x={centerX - iconSize/2}
-              y={centerY}
-              width={iconSize}
-              height={iconSize/2}
-              fill="#543D29"
-            />
-          </Group>
-        );
-      case 'night':
-        return (
-          <Group>
-            <Circle
-              x={centerX}
-              y={centerY}
-              radius={iconSize / 2}
-              fill="#E1E1E1"
-            />
-            <Circle
-              x={centerX + 2}
-              y={centerY - 2}
-              radius={iconSize / 2.5}
-              fill="#1A237E"
-            />
-          </Group>
-        );
+    if (currentTheme === 'night') {
+      // Moon icon
+      return (
+        <Circle
+          radius={buttonSize * 0.3}
+          fill="#FFFFFF"
+          offsetX={-buttonSize * 0.1}
+        />
+      );
+    } else if (currentTheme === 'sunset') {
+      // Sun setting icon
+      return (
+        <Circle
+          radius={buttonSize * 0.3}
+          fill="#FFC107"
+        />
+      );
+    } else {
+      // Day sun icon
+      return (
+        <Circle
+          radius={buttonSize * 0.3}
+          fill="#FFC107"
+        />
+      );
     }
   };
-  
+
   return (
-    <Group 
-      x={x} 
+    <Group
+      x={x}
       y={y}
-      opacity={disabled ? 0.7 : 1}
-      onClick={handleClick}
-      onTap={handleClick}
+      opacity={disabled ? 0.6 : 1}
+      name="themeSwitch" // Important for event bubbling check
     >
+      {/* Main button background */}
       <Rect
         width={buttonSize}
         height={buttonSize}
-        fill="rgba(0,0,0,0.5)"
-        cornerRadius={10}
+        fill={disabled ? 'rgba(50, 50, 50, 0.5)' : 'rgba(0, 0, 0, 0.5)'}
+        cornerRadius={8}
+        stroke={disabled ? "#555555" : "#CCCCCC"}
+        strokeWidth={1}
+        onClick={handleClick}
+        onTap={handleClick}
+        shadowColor="black"
+        shadowBlur={3}
+        shadowOpacity={0.3}
+        shadowOffset={{ x: 1, y: 1 }}
       />
-      {renderThemeIcon()}
+      
+      {/* Theme icon */}
+      <Group
+        x={buttonSize / 2}
+        y={buttonSize / 2}
+        onClick={handleClick}
+        onTap={handleClick}
+      >
+        {renderThemeIcon()}
+      </Group>
     </Group>
   );
 };

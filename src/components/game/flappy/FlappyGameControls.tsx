@@ -1,22 +1,29 @@
 import { useState } from 'react';
-import { useGame } from '../../../context/GameContext';
+import { useGame } from '../../../context/GameContext'; // Generic game state/controls
+import { useFlappyAchievements } from './hooks/useFlappyAchievements'; // Flappy specific state
 import { useEmojiCustomization } from '../../../context/EmojiCustomizationContext';
 import { Play, RotateCcw, HelpCircle, Medal } from 'lucide-react';
+import { memo } from 'react';
 
 const FlappyGameControls = () => {
+  // Generic state and controls from GameContext
   const { 
     isPlaying,
     gameOver,
-    score,
-    highScore,
+    score, 
     gameSpeed,
-    startGame,
-    resetGame,
+    startGame, // Use generic startGame
+    resetGame, // Use generic resetGame
     setGameSpeed,
-    achievements,
-    playCount,
-    totalPipesPassed
   } = useGame();
+
+  // Flappy specific state from useFlappyAchievements hook
+  const {
+    localHighScore, // Use Flappy specific high score
+    playCount,      // Use Flappy specific play count
+    totalPipesPassed, // Use Flappy specific pipe count
+    achievements    // Use Flappy specific achievements
+  } = useFlappyAchievements();
   
   const { emojiType } = useEmojiCustomization();
   
@@ -30,21 +37,24 @@ const FlappyGameControls = () => {
     { value: 5, label: 'Hard' }
   ];
   
-  // Handle play/restart button click
+  // Handle play/restart button click - Uses generic context functions
   const handlePlayClick = () => {
     if (gameOver) {
-      resetGame();
-      setTimeout(() => startGame(), 50); // Small delay to ensure reset completes
+      resetGame(); // Use generic reset
+      setTimeout(() => startGame(), 50); // Use generic start
     } else if (!isPlaying) {
-      startGame();
+      startGame(); // Use generic start
     }
   };
 
-  // Get completion percentage for all achievements
+  // Get completion percentage for all achievements - Now safe as achievements comes from the hook
   const achievementCompletion = () => {
+    if (!achievements || achievements.length === 0) {
+      return 0;
+    }
     const total = achievements.length;
     const completed = achievements.filter(a => a.unlocked).length;
-    return Math.round((completed / total) * 100);
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
   };
   
   return (
@@ -71,7 +81,7 @@ const FlappyGameControls = () => {
       <div className="bg-gray-900/50 rounded-md p-3 flex justify-between">
         <div>
           <p className="text-sm text-gray-400">High Score</p>
-          <p className="text-xl font-bold text-yellow-300">{highScore}</p>
+          <p className="text-xl font-bold text-yellow-300">{localHighScore}</p>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-400">Current Character</p>
@@ -134,55 +144,58 @@ const FlappyGameControls = () => {
           
           <p className="font-bold text-yellow-300 mb-2">Your Achievements:</p>
           <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
-            {achievements.map(achievement => (
-              <div 
-                key={achievement.id}
-                className={`p-2 rounded-md ${
-                  achievement.unlocked 
-                    ? "bg-indigo-900/50 border border-indigo-500/30" 
-                    : "bg-gray-800/50 border border-gray-700/30"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {achievement.unlocked ? (
-                    <div className="p-1 bg-yellow-500 rounded-full">
-                      <Medal size={14} className="text-gray-900" />
-                    </div>
-                  ) : (
-                    <div className="p-1 bg-gray-700 rounded-full">
-                      <Medal size={14} className="text-gray-500" />
-                    </div>
-                  )}
-                  <span className={achievement.unlocked ? "text-yellow-200 font-medium" : "text-gray-400"}>
-                    {achievement.title}
-                  </span>
-                </div>
-                
-                <p className="text-xs text-gray-400 mt-1 ml-7">
-                  {achievement.description}
-                </p>
-                
-                <div className="mt-2 ml-7">
-                  <div className="h-1.5 bg-gray-700 rounded-full w-full">
-                    <div 
-                      className="h-1.5 bg-indigo-500 rounded-full" 
-                      style={{ width: `${Math.min(100, Math.round((achievement.progress / achievement.milestone) * 100))}%` }}
-                    />
+            {achievements && achievements.length > 0 ? (
+              achievements.map(achievement => (
+                <div 
+                  key={achievement.id}
+                  className={`p-2 rounded-md ${
+                    achievement.unlocked 
+                      ? "bg-indigo-900/50 border border-indigo-500/30" 
+                      : "bg-gray-800/50 border border-gray-700/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {achievement.unlocked ? (
+                      <div className="p-1 bg-yellow-500 rounded-full">
+                        <Medal size={14} className="text-gray-900" />
+                      </div>
+                    ) : (
+                      <div className="p-1 bg-gray-700 rounded-full">
+                        <Medal size={14} className="text-gray-500" />
+                      </div>
+                    )}
+                    <span className={achievement.unlocked ? "text-yellow-200 font-medium" : "text-gray-400"}>
+                      {achievement.title}
+                    </span>
                   </div>
-                  <div className="flex justify-between mt-1 text-xs text-gray-500">
-                    <span>{achievement.progress}/{achievement.milestone}</span>
-                    <span>{Math.round((achievement.progress / achievement.milestone) * 100)}%</span>
+                  
+                  <p className="text-xs text-gray-400 mt-1 ml-7">
+                    {achievement.description}
+                  </p>
+                  
+                  <div className="mt-2 ml-7">
+                    <div className="h-1.5 bg-gray-700 rounded-full w-full">
+                      <div 
+                        className="h-1.5 bg-indigo-500 rounded-full" 
+                        style={{ width: `${Math.min(100, Math.round((achievement.progress / achievement.milestone) * 100))}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-gray-500">
+                      <span>{achievement.progress}/{achievement.milestone}</span>
+                      <span>{achievement.milestone > 0 ? Math.round((achievement.progress / achievement.milestone) * 100) : 0}%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-400">Loading achievements...</p>
+            )}
           </div>
         </div>
       )}
       
       {/* Main action buttons */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Play/Restart button */}
         <button
           onClick={handlePlayClick}
           disabled={isPlaying}
@@ -196,7 +209,6 @@ const FlappyGameControls = () => {
           {gameOver ? 'Play Again' : 'Play'}
         </button>
         
-        {/* Reset button - only enabled when not playing */}
         <button
           onClick={resetGame}
           disabled={isPlaying}
@@ -211,7 +223,7 @@ const FlappyGameControls = () => {
         </button>
       </div>
       
-      {/* Instructions button - separated from main actions */}
+      {/* Instructions button */}
       <button
         onClick={() => setShowInstructions(!showInstructions)}
         className="py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors flex items-center justify-center gap-2"
@@ -244,4 +256,4 @@ const FlappyGameControls = () => {
   );
 };
 
-export default FlappyGameControls;
+export default memo(FlappyGameControls);
