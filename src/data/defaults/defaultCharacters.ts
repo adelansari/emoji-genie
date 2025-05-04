@@ -1,11 +1,12 @@
 import { Character } from "../../context/CharacterCollectionContext";
 import { EmojiType } from "../../context/EmojiCustomizationContext";
+import { convertSvgToPng } from "../../utils/exportUtils";
 
 const generateDefaultId = (prefix: string) => {
   return `default_${prefix}_${Math.random().toString(36).substring(2, 9)}`;
 };
 
-const createGeometryDashSvg = (color: string, shape: 'square' | 'triangle' | 'circle', face: 'happy' | 'cool'): string => {
+const createGeometryDashSvg = async (color: string, shape: 'square' | 'triangle' | 'circle', face: 'happy' | 'cool'): Promise<string> => {
   let shapePath = '';
   let viewBox = '0 0 100 100';
   
@@ -42,18 +43,34 @@ const createGeometryDashSvg = (color: string, shape: 'square' | 'triangle' | 'ci
     </svg>
   `;
   
-  // Convert to base64
-  return `data:image/svg+xml;base64,${btoa(svgString)}`;
+  try {
+    // Convert to base64
+    const svgDataUrl = `data:image/svg+xml;base64,${btoa(svgString)}`;
+    // Convert SVG to PNG to avoid corruption issues
+    return await convertSvgToPng(svgDataUrl);
+  } catch (error) {
+    console.error('Error creating geometry dash character:', error);
+    // Fallback to SVG if PNG conversion fails
+    return `data:image/svg+xml;base64,${btoa(svgString)}`;
+  }
 };
 
 // Create default base characters
-export const createDefaultCharacters = (): Character[] => {
+export const createDefaultCharacters = async (): Promise<Character[]> => {
+  // Create all characters in parallel
+  const [square, triangle, circle, coolSquare] = await Promise.all([
+    createGeometryDashSvg('#FF5722', 'square', 'happy'),
+    createGeometryDashSvg('#2196F3', 'triangle', 'cool'),
+    createGeometryDashSvg('#4CAF50', 'circle', 'happy'),
+    createGeometryDashSvg('#9C27B0', 'square', 'cool')
+  ]);
+
   return [
     // Default Emoji characters - Geometry Dash inspired
     {
       id: generateDefaultId('emoji1'),
       name: "Square Emoji",
-      imageUrl: createGeometryDashSvg('#FF5722', 'square', 'happy'),
+      imageUrl: square,
       type: 'emoji' as EmojiType,
       createdAt: Date.now() - 40000,
       isDefault: true
@@ -61,7 +78,7 @@ export const createDefaultCharacters = (): Character[] => {
     {
       id: generateDefaultId('emoji2'),
       name: "Triangle Emoji",
-      imageUrl: createGeometryDashSvg('#2196F3', 'triangle', 'cool'),
+      imageUrl: triangle,
       type: 'emoji' as EmojiType,
       createdAt: Date.now() - 30000,
       isDefault: true
@@ -71,7 +88,7 @@ export const createDefaultCharacters = (): Character[] => {
     {
       id: generateDefaultId('sticker1'),
       name: "Circle Sticker",
-      imageUrl: createGeometryDashSvg('#4CAF50', 'circle', 'happy'),
+      imageUrl: circle,
       type: 'sticker' as EmojiType,
       createdAt: Date.now() - 20000,
       isDefault: true
@@ -79,7 +96,7 @@ export const createDefaultCharacters = (): Character[] => {
     {
       id: generateDefaultId('sticker2'),
       name: "Cool Square",
-      imageUrl: createGeometryDashSvg('#9C27B0', 'square', 'cool'),
+      imageUrl: coolSquare,
       type: 'sticker' as EmojiType, 
       createdAt: Date.now() - 10000,
       isDefault: true
@@ -88,6 +105,7 @@ export const createDefaultCharacters = (): Character[] => {
 };
 
 // Export individual default characters by type
-export const getDefaultCharactersByType = (type: EmojiType): Character[] => {
-  return createDefaultCharacters().filter(character => character.type === type);
+export const getDefaultCharactersByType = async (type: EmojiType): Promise<Character[]> => {
+  const allCharacters = await createDefaultCharacters();
+  return allCharacters.filter(character => character.type === type);
 };

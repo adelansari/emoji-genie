@@ -77,6 +77,53 @@ export async function exportElementAsImage(
 }
 
 /**
+ * Convert an SVG data URL to a PNG data URL
+ * This helps prevent corruption with SVG content containing special characters
+ * @param svgDataUrl The SVG data URL to convert
+ * @param width Optional width for the output image
+ * @param height Optional height for the output image
+ */
+export function convertSvgToPng(svgDataUrl: string, width = 200, height = 200): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+        
+        // Draw with white background to preserve transparency
+        ctx.fillStyle = 'transparent';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Center the image
+        const scale = Math.min(width / img.width, height / img.height);
+        const x = (width - img.width * scale) / 2;
+        const y = (height - img.height * scale) / 2;
+        
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      
+      img.onerror = (err) => {
+        console.error('Error loading SVG:', err);
+        reject(err);
+      };
+      
+      img.src = svgDataUrl;
+    } catch (err) {
+      console.error('Error converting SVG to PNG:', err);
+      reject(err);
+    }
+  });
+}
+
+/**
  * Save an image data URL to local storage
  */
 export function saveImageToLocalStorage(dataUrl: string, key: string): void {

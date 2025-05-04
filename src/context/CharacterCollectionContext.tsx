@@ -44,11 +44,10 @@ interface CharacterCollectionProviderProps {
 
 export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderProps> = ({ children }) => {
   const [userCharacters, setUserCharacters] = useState<Character[]>([]);
+  const [defaultCharacters, setDefaultCharacters] = useState<Character[]>([]);
   const [activeCharacterId, setActiveCharacterId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-
-  // Get default characters that will always be present
-  const defaultCharacters = useMemo(() => createDefaultCharacters(), []);
+  const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
 
   // Combine user's characters with default characters
   const characters = useMemo(() => {
@@ -62,8 +61,30 @@ export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderPr
     return [...defaultCharacters, ...filteredUserChars];
   }, [userCharacters, defaultCharacters]);
 
+  // Load default characters on mount (now asynchronous)
+  useEffect(() => {
+    const loadDefaultCharacters = async () => {
+      try {
+        console.log('Loading default characters...');
+        const defaultChars = await createDefaultCharacters();
+        setDefaultCharacters(defaultChars);
+        console.log('Default characters loaded successfully');
+      } catch (error) {
+        console.error('Failed to load default characters:', error);
+        // Set empty array as fallback
+        setDefaultCharacters([]);
+      } finally {
+        setIsLoadingDefaults(false);
+      }
+    };
+    
+    loadDefaultCharacters();
+  }, []);
+
   // Load saved characters from localStorage on mount
   useEffect(() => {
+    if (isLoadingDefaults) return; // Wait for default characters to load first
+    
     try {
       const savedCharacters = localStorage.getItem(LOCAL_STORAGE_KEY);
       
@@ -92,7 +113,7 @@ export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderPr
       console.error('Error loading characters from localStorage:', error);
       setIsInitialized(true);
     }
-  }, []);
+  }, [isLoadingDefaults]);
 
   // Save characters to localStorage whenever they change
   useEffect(() => {
