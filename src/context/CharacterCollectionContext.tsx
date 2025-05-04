@@ -43,45 +43,84 @@ interface CharacterCollectionProviderProps {
 export const CharacterCollectionProvider: React.FC<CharacterCollectionProviderProps> = ({ children }) => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [activeCharacterId, setActiveCharacterId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load saved characters from localStorage on mount
   useEffect(() => {
     try {
       const savedCharacters = localStorage.getItem(LOCAL_STORAGE_KEY);
+      
       if (savedCharacters) {
-        setCharacters(JSON.parse(savedCharacters));
+        const parsedData = JSON.parse(savedCharacters);
+        // Validate parsed data is an array
+        if (Array.isArray(parsedData)) {
+          setCharacters(parsedData);
+          console.log('Loaded characters from localStorage:', parsedData.length);
+        } else {
+          console.error('Saved characters is not an array:', parsedData);
+        }
+      } else {
+        console.log('No saved characters found in localStorage');
       }
 
       const savedActiveId = localStorage.getItem(ACTIVE_CHARACTER_KEY);
       if (savedActiveId) {
         setActiveCharacterId(savedActiveId);
       }
+      
+      setIsInitialized(true);
     } catch (error) {
       console.error('Error loading characters from localStorage:', error);
+      setIsInitialized(true);
     }
   }, []);
 
   // Save characters to localStorage whenever they change
   useEffect(() => {
+    if (!isInitialized) return;
+    
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(characters));
+      const serializedData = JSON.stringify(characters);
+      localStorage.setItem(LOCAL_STORAGE_KEY, serializedData);
+      console.log('Saved characters to localStorage:', characters.length);
     } catch (error) {
       console.error('Error saving characters to localStorage:', error);
+      
+      // If we're getting a quota exceeded error, try to save without the image data
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        try {
+          // Create a copy with placeholder images
+          const minimalCharacters = characters.map(char => ({
+            ...char,
+            imageUrl: char.imageUrl.length > 1000 ? `${char.imageUrl.substring(0, 64)}...` : char.imageUrl
+          }));
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(minimalCharacters));
+          console.warn('Saved characters with truncated images due to storage limits');
+        } catch (innerError) {
+          console.error('Failed to save even with truncated images:', innerError);
+        }
+      }
     }
-  }, [characters]);
+  }, [characters, isInitialized]);
 
   // Save active character ID to localStorage
   useEffect(() => {
-    if (activeCharacterId) {
-      localStorage.setItem(ACTIVE_CHARACTER_KEY, activeCharacterId);
-    } else {
-      localStorage.removeItem(ACTIVE_CHARACTER_KEY);
+    if (!isInitialized) return;
+    
+    try {
+      if (activeCharacterId) {
+        localStorage.setItem(ACTIVE_CHARACTER_KEY, activeCharacterId);
+      } else {
+        localStorage.removeItem(ACTIVE_CHARACTER_KEY);
+      }
+    } catch (error) {
+      console.error('Error saving active character ID:', error);
     }
-  }, [activeCharacterId]);
+  }, [activeCharacterId, isInitialized]);
 
   // Generate a unique ID for characters
   const generateId = () => {
-    return `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `char_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   };
 
   // Add a new character to the collection

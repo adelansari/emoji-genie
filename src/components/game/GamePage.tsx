@@ -52,7 +52,16 @@ const GamePage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-white">Select a Character</h1>
           <button
-            onClick={() => setShowingGame(false)}
+            onClick={() => {
+              // If we've already shown the game before, go back to it
+              // Otherwise go to the game selector
+              if (showingGame) {
+                setShowCharacterSelector(false);
+              } else {
+                setShowingGame(false);
+                setShowCharacterSelector(false);
+              }
+            }}
             className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow cursor-pointer transition-colors"
           >
             <ArrowLeft size={16} />
@@ -89,7 +98,10 @@ const GamePage = () => {
           <div className="bg-gray-800 p-6 rounded-lg text-center">
             <p className="text-gray-400 mb-4">You don't have any characters in your collection yet.</p>
             <button 
-              onClick={() => setShowingGame(true)}
+              onClick={() => {
+                setShowCharacterSelector(false);
+                setShowingGame(true);
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md inline-flex items-center gap-2"
             >
               <UserCircle2 size={18} /> Use Default Character
